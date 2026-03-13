@@ -1,8 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { Link, usePage } from '@inertiajs/vue3';
-import Avatar from 'primevue/avatar';
-import Button from 'primevue/button';
+import { computed, ref } from "vue";
+import { Link, usePage } from "@inertiajs/vue3";
+import Avatar from "primevue/avatar";
 
 const page = usePage();
 const sidebarOpen = ref(false);
@@ -10,8 +9,21 @@ const sidebarOpen = ref(false);
 const user = computed(() => page.props.auth.user);
 
 const navigationItems = [
-    { label: 'Dashboard', icon: 'pi pi-home', route: 'dashboard' },
-    { label: 'Profil', icon: 'pi pi-user', route: 'profile.edit' },
+    {
+        label: "Dashboard",
+        icon: "pi pi-home",
+        route: "dashboard",
+    },
+    {
+        label: "Companies",
+        icon: "pi pi-building",
+        route: "companies.index",
+    },
+    {
+        label: "Profil",
+        icon: "pi pi-user",
+        route: "profile.edit",
+    },
 ];
 
 const isActive = (name) => route().current(name);
@@ -25,7 +37,9 @@ const isActive = (name) => route().current(name);
         >
             <div class="mb-8 flex items-center justify-between">
                 <Link :href="route('dashboard')" class="flex items-center gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 to-sky-400 text-xl font-bold text-slate-950">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 to-sky-400 text-xl font-bold text-slate-950"
+                    >
                         P
                     </div>
                     <div>
@@ -38,14 +52,13 @@ const isActive = (name) => route().current(name);
                     </div>
                 </Link>
 
-                <Button
-                    icon="pi pi-times"
-                    rounded
-                    text
-                    severity="secondary"
-                    class="lg:hidden"
+                <button
+                    type="button"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-300 transition hover:bg-white/10 hover:text-white lg:hidden"
                     @click="sidebarOpen = false"
-                />
+                >
+                    <i class="pi pi-times text-base"></i>
+                </button>
             </div>
 
             <div class="mb-8 rounded-[2rem] bg-white/5 p-5 ring-1 ring-white/10">
@@ -53,7 +66,8 @@ const isActive = (name) => route().current(name);
                     Sakai style
                 </div>
                 <p class="text-sm leading-6 text-slate-300">
-                    PrimeVue komponensekkel felépített admin shell Laravel 12 + Inertia kornyezetben.
+                    PrimeVue komponensekkel felépített admin shell Laravel 12 + Inertia
+                    kornyezetben.
                 </p>
             </div>
 
@@ -73,10 +87,13 @@ const isActive = (name) => route().current(name);
                 </Link>
             </nav>
 
-            <div class="mt-auto rounded-[2rem] bg-gradient-to-br from-emerald-500/20 to-sky-400/20 p-5 ring-1 ring-white/10">
+            <div
+                class="mt-auto rounded-[2rem] bg-gradient-to-br from-emerald-500/20 to-sky-400/20 p-5 ring-1 ring-white/10"
+            >
                 <div class="mb-3 text-sm font-semibold">Deployment tip</div>
                 <p class="text-sm leading-6 text-slate-300">
-                    Wamp alatt a projekt webrootja a <span class="font-semibold text-white">public</span> mappa legyen.
+                    Wamp alatt a projekt webrootja a
+                    <span class="font-semibold text-white">public</span> mappa legyen.
                 </p>
             </div>
         </aside>
@@ -88,32 +105,43 @@ const isActive = (name) => route().current(name);
         />
 
         <div class="min-w-0 flex-1">
-            <header class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10">
+            <header
+                class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10"
+            >
                 <div class="flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
-                        <Button
-                            icon="pi pi-bars"
-                            rounded
-                            text
-                            severity="secondary"
-                            class="lg:hidden"
+                        <button
+                            type="button"
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
                             @click="sidebarOpen = true"
-                        />
+                        >
+                            <i class="pi pi-bars text-base"></i>
+                        </button>
 
                         <div>
-                            <div class="text-xs uppercase tracking-[0.3em] text-slate-400">
+                            <div
+                                class="text-xs uppercase tracking-[0.3em] text-slate-400"
+                            >
                                 Admin workspace
                             </div>
-                            <div v-if="$slots.header" class="text-2xl font-semibold tracking-tight text-slate-900">
+                            <div
+                                v-if="$slots.header"
+                                class="text-2xl font-semibold tracking-tight text-slate-900"
+                            >
                                 <slot name="header" />
                             </div>
-                            <div v-else class="text-2xl font-semibold tracking-tight text-slate-900">
+                            <div
+                                v-else
+                                class="text-2xl font-semibold tracking-tight text-slate-900"
+                            >
                                 Dashboard
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                    <div
+                        class="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm"
+                    >
                         <Avatar
                             shape="circle"
                             :label="user?.name?.charAt(0)?.toUpperCase() ?? 'U'"
@@ -123,7 +151,10 @@ const isActive = (name) => route().current(name);
                             <div class="font-medium text-slate-900">{{ user?.name }}</div>
                             <div class="text-slate-500">{{ user?.email }}</div>
                         </div>
-                        <Link :href="route('profile.edit')" class="text-slate-400 transition hover:text-slate-700">
+                        <Link
+                            :href="route('profile.edit')"
+                            class="text-slate-400 transition hover:text-slate-700"
+                        >
                             <i class="pi pi-cog text-lg"></i>
                         </Link>
                         <Link
