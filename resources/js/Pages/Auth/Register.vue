@@ -1,10 +1,8 @@
 <script setup>
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import Button from 'primevue/button';
+import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
 
 const form = useForm({
     name: '',
@@ -21,93 +19,178 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Register" />
+    <Head title="Register" />
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="name" value="Name" />
+    <div class="app-shell relative min-h-screen overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.14),_transparent_28%)]"></div>
 
-                <TextInput
-                    id="name"
-                    type="text"
-                    class="mt-1 block w-full"
-                    v-model="form.name"
-                    required
-                    autofocus
-                    autocomplete="name"
-                />
+        <div class="relative grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+            <section class="hidden bg-slate-950 px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
+                <div>
+                    <Link href="/" class="inline-flex items-center gap-4">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-sky-400 text-2xl font-bold text-slate-950">
+                            P
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase tracking-[0.35em] text-emerald-300">Sakai inspired</div>
+                            <div class="text-3xl font-semibold tracking-tight">Playground</div>
+                        </div>
+                    </Link>
 
-                <InputError class="mt-2" :message="form.errors.name" />
-            </div>
+                    <div class="mt-16 max-w-xl">
+                        <div class="mb-4 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-emerald-200 ring-1 ring-white/10">
+                            Create your workspace
+                        </div>
+                        <h1 class="text-5xl font-semibold leading-tight tracking-tight">
+                            Epits fel egy uj fiokot percek alatt.
+                        </h1>
+                        <p class="mt-6 text-lg leading-8 text-slate-300">
+                            A regisztracios oldal ugyanazt a Sakai ihletesu vizualis rendszert hasznalja, mint a login,
+                            es kozvetlenul a Laravel Breeze auth flow-ra csatlakozik.
+                        </p>
+                    </div>
+                </div>
 
-            <div class="mt-4">
-                <InputLabel for="email" value="Email" />
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="rounded-[1.75rem] bg-white/5 p-5 ring-1 ring-white/10">
+                        <div class="text-sm text-slate-400">Onboarding</div>
+                        <div class="mt-2 text-xl font-semibold">Fast setup</div>
+                    </div>
+                    <div class="rounded-[1.75rem] bg-white/5 p-5 ring-1 ring-white/10">
+                        <div class="text-sm text-slate-400">Validation</div>
+                        <div class="mt-2 text-xl font-semibold">Laravel</div>
+                    </div>
+                    <div class="rounded-[1.75rem] bg-white/5 p-5 ring-1 ring-white/10">
+                        <div class="text-sm text-slate-400">UI</div>
+                        <div class="mt-2 text-xl font-semibold">PrimeVue</div>
+                    </div>
+                </div>
+            </section>
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autocomplete="username"
-                />
+            <section class="flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
+                <div class="w-full max-w-xl">
+                    <div class="mb-8 text-center lg:hidden">
+                        <Link href="/" class="inline-flex items-center gap-3">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-emerald-400 to-sky-400 text-xl font-bold text-slate-950">
+                                P
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs uppercase tracking-[0.3em] text-emerald-600">PrimeVue</div>
+                                <div class="text-2xl font-semibold tracking-tight text-slate-950">Playground</div>
+                            </div>
+                        </Link>
+                    </div>
 
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
+                    <div class="app-card border-0 p-8 sm:p-10">
+                        <div class="mb-8">
+                            <div class="text-sm font-medium uppercase tracking-[0.3em] text-emerald-600">
+                                Join now
+                            </div>
+                            <h2 class="mt-3 text-4xl font-semibold tracking-tight text-slate-950">
+                                Create account
+                            </h2>
+                            <p class="mt-3 text-base leading-7 text-slate-500">
+                                Toltse ki az adatokat az uj fiok letrehozasahoz.
+                            </p>
+                        </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+                        <form class="space-y-5" @submit.prevent="submit">
+                            <div class="space-y-2">
+                                <label for="name" class="text-sm font-medium text-slate-700">Name</label>
+                                <InputText
+                                    id="name"
+                                    v-model="form.name"
+                                    type="text"
+                                    autocomplete="name"
+                                    class="w-full"
+                                    input-class="w-full"
+                                    placeholder="John Doe"
+                                    required
+                                    autofocus
+                                />
+                                <small v-if="form.errors.name" class="block text-sm text-rose-500">
+                                    {{ form.errors.name }}
+                                </small>
+                            </div>
 
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="new-password"
-                />
+                            <div class="space-y-2">
+                                <label for="email" class="text-sm font-medium text-slate-700">Email</label>
+                                <InputText
+                                    id="email"
+                                    v-model="form.email"
+                                    type="email"
+                                    autocomplete="username"
+                                    class="w-full"
+                                    input-class="w-full"
+                                    placeholder="name@example.com"
+                                    required
+                                />
+                                <small v-if="form.errors.email" class="block text-sm text-rose-500">
+                                    {{ form.errors.email }}
+                                </small>
+                            </div>
 
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+                            <div class="space-y-2">
+                                <label for="password" class="text-sm font-medium text-slate-700">Password</label>
+                                <Password
+                                    id="password"
+                                    v-model="form.password"
+                                    input-class="w-full"
+                                    class="w-full"
+                                    toggle-mask
+                                    autocomplete="new-password"
+                                    placeholder="Password"
+                                    required
+                                    fluid
+                                />
+                                <small v-if="form.errors.password" class="block text-sm text-rose-500">
+                                    {{ form.errors.password }}
+                                </small>
+                            </div>
 
-            <div class="mt-4">
-                <InputLabel
-                    for="password_confirmation"
-                    value="Confirm Password"
-                />
+                            <div class="space-y-2">
+                                <label for="password_confirmation" class="text-sm font-medium text-slate-700">
+                                    Confirm password
+                                </label>
+                                <Password
+                                    id="password_confirmation"
+                                    v-model="form.password_confirmation"
+                                    input-class="w-full"
+                                    class="w-full"
+                                    :feedback="false"
+                                    toggle-mask
+                                    autocomplete="new-password"
+                                    placeholder="Confirm password"
+                                    required
+                                    fluid
+                                />
+                                <small v-if="form.errors.password_confirmation" class="block text-sm text-rose-500">
+                                    {{ form.errors.password_confirmation }}
+                                </small>
+                            </div>
 
-                <TextInput
-                    id="password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password_confirmation"
-                    required
-                    autocomplete="new-password"
-                />
+                            <Button
+                                type="submit"
+                                label="Create Account"
+                                icon="pi pi-user-plus"
+                                icon-pos="right"
+                                class="w-full"
+                                :loading="form.processing"
+                            />
+                        </form>
 
-                <InputError
-                    class="mt-2"
-                    :message="form.errors.password_confirmation"
-                />
-            </div>
-
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    :href="route('login')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Already registered?
-                </Link>
-
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Register
-                </PrimaryButton>
-            </div>
-        </form>
-    </GuestLayout>
+                        <div class="mt-8 border-t border-slate-200 pt-6 text-center text-sm text-slate-500">
+                            Mar van fiokod?
+                            <Link
+                                :href="route('login')"
+                                class="font-semibold text-emerald-600 transition hover:text-emerald-700"
+                            >
+                                Bejelentkezes
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 </template>

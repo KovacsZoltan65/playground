@@ -1,11 +1,10 @@
 <script setup>
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import Button from 'primevue/button';
+import Checkbox from 'primevue/checkbox';
+import InputText from 'primevue/inputtext';
+import Message from 'primevue/message';
+import Password from 'primevue/password';
 
 defineProps({
     canResetPassword: {
@@ -30,71 +29,165 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Log in" />
+    <Head title="Log in" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
-            {{ status }}
+    <div class="app-shell relative min-h-screen overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.14),_transparent_28%)]"></div>
+
+        <div class="relative grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+            <section class="hidden bg-slate-950 px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between xl:px-16">
+                <div>
+                    <Link href="/" class="inline-flex items-center gap-4">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-emerald-400 to-sky-400 text-2xl font-bold text-slate-950">
+                            P
+                        </div>
+                        <div>
+                            <div class="text-xs uppercase tracking-[0.35em] text-emerald-300">Sakai inspired</div>
+                            <div class="text-3xl font-semibold tracking-tight">Playground</div>
+                        </div>
+                    </Link>
+
+                    <div class="mt-16 max-w-xl">
+                        <div class="mb-4 inline-flex rounded-full bg-white/10 px-4 py-2 text-sm text-emerald-200 ring-1 ring-white/10">
+                            Laravel 12 + PrimeVue
+                        </div>
+                        <h1 class="text-5xl font-semibold leading-tight tracking-tight">
+                            Udv ujra a munkateredben.
+                        </h1>
+                        <p class="mt-6 text-lg leading-8 text-slate-300">
+                            Jelentkezz be a Sakai login oldal stilusara epulo feluleten, PrimeVue komponensekkel es a
+                            meglvo Laravel auth folyamattal.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div class="rounded-[1.75rem] bg-white/5 p-5 ring-1 ring-white/10">
+                        <div class="text-sm text-slate-400">UI</div>
+                        <div class="mt-2 text-xl font-semibold">PrimeVue 4</div>
+                    </div>
+                    <div class="rounded-[1.75rem] bg-white/5 p-5 ring-1 ring-white/10">
+                        <div class="text-sm text-slate-400">Auth</div>
+                        <div class="mt-2 text-xl font-semibold">Laravel Breeze</div>
+                    </div>
+                    <div class="rounded-[1.75rem] bg-white/5 p-5 ring-1 ring-white/10">
+                        <div class="text-sm text-slate-400">Build</div>
+                        <div class="mt-2 text-xl font-semibold">Vite</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="flex items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
+                <div class="w-full max-w-xl">
+                    <div class="mb-8 text-center lg:hidden">
+                        <Link href="/" class="inline-flex items-center gap-3">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-emerald-400 to-sky-400 text-xl font-bold text-slate-950">
+                                P
+                            </div>
+                            <div class="text-left">
+                                <div class="text-xs uppercase tracking-[0.3em] text-emerald-600">PrimeVue</div>
+                                <div class="text-2xl font-semibold tracking-tight text-slate-950">Playground</div>
+                            </div>
+                        </Link>
+                    </div>
+
+                    <div class="app-card border-0 p-8 sm:p-10">
+                        <div class="mb-8">
+                            <div class="text-sm font-medium uppercase tracking-[0.3em] text-emerald-600">
+                                Hello
+                            </div>
+                            <h2 class="mt-3 text-4xl font-semibold tracking-tight text-slate-950">
+                                Sign in
+                            </h2>
+                            <p class="mt-3 text-base leading-7 text-slate-500">
+                                Add meg az email cimedet es a jelszavadat a belepeshez.
+                            </p>
+                        </div>
+
+                        <Message v-if="status" severity="success" class="mb-6">
+                            {{ status }}
+                        </Message>
+
+                        <form class="space-y-6" @submit.prevent="submit">
+                            <div class="space-y-2">
+                                <label for="email" class="text-sm font-medium text-slate-700">Email</label>
+                                <InputText
+                                    id="email"
+                                    v-model="form.email"
+                                    type="email"
+                                    autocomplete="username"
+                                    class="w-full"
+                                    input-class="w-full"
+                                    placeholder="name@example.com"
+                                    required
+                                    autofocus
+                                />
+                                <small v-if="form.errors.email" class="block text-sm text-rose-500">
+                                    {{ form.errors.email }}
+                                </small>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-4">
+                                    <label for="password" class="text-sm font-medium text-slate-700">Password</label>
+                                    <Link
+                                        v-if="canResetPassword"
+                                        :href="route('password.request')"
+                                        class="text-sm font-medium text-emerald-600 transition hover:text-emerald-700"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </div>
+                                <Password
+                                    id="password"
+                                    v-model="form.password"
+                                    input-class="w-full"
+                                    class="w-full"
+                                    :feedback="false"
+                                    toggle-mask
+                                    autocomplete="current-password"
+                                    placeholder="Password"
+                                    required
+                                    fluid
+                                />
+                                <small v-if="form.errors.password" class="block text-sm text-rose-500">
+                                    {{ form.errors.password }}
+                                </small>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-4">
+                                <label class="flex items-center gap-3 text-sm text-slate-600">
+                                    <Checkbox v-model="form.remember" binary input-id="remember" />
+                                    <span>Remember me</span>
+                                </label>
+
+                                <div class="text-sm text-slate-400">
+                                    Secure session
+                                </div>
+                            </div>
+
+                            <Button
+                                type="submit"
+                                label="Sign In"
+                                icon="pi pi-arrow-right"
+                                icon-pos="right"
+                                class="w-full"
+                                :loading="form.processing"
+                            />
+                        </form>
+
+                        <div class="mt-8 border-t border-slate-200 pt-6 text-center text-sm text-slate-500">
+                            Nincs fiokod?
+                            <Link
+                                :href="route('register')"
+                                class="font-semibold text-emerald-600 transition hover:text-emerald-700"
+                            >
+                                Regisztracio
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
-            </div>
-
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
-                    >
-                </label>
-            </div>
-
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Forgot your password?
-                </Link>
-
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Log in
-                </PrimaryButton>
-            </div>
-        </form>
-    </GuestLayout>
+    </div>
 </template>
