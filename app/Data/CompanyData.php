@@ -3,6 +3,9 @@
 namespace App\Data;
 
 use App\Models\Company;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Data;
 
 class CompanyData extends Data
@@ -31,6 +34,41 @@ class CompanyData extends Data
             created_at: $company->created_at?->toDateTimeString(),
             updated_at: $company->updated_at?->toDateTimeString(),
         );
+    }
+
+    public static function fromRequest(Request $request, ?Company $company = null): self
+    {
+        return self::validateAndCreate([
+            'id' => $company?->id,
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'phone' => $request->input('phone'),
+            'address' => $request->input('address'),
+            'is_active' => $request->boolean('is_active'),
+        ]);
+    }
+
+    public static function validateBulkDeleteIds(Request $request): array
+    {
+        return Validator::make($request->all(), [
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct', 'exists:companies,id'],
+        ])->validate()['ids'];
+    }
+
+    public static function rules(): array
+    {
+        /** @var Company|null $company */
+        $company = request()->route('company');
+
+        return [
+            'id' => ['nullable', 'integer'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('companies', 'name')->ignore($company?->id)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('companies', 'email')->ignore($company?->id)],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'is_active' => ['required', 'boolean'],
+        ];
     }
 
     public function toRepositoryAttributes(): array

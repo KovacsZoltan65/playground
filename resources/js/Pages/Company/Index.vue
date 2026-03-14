@@ -12,6 +12,7 @@ import InputText from 'primevue/inputtext';
 import Tag from 'primevue/tag';
 
 const companies = ref([]);
+const selectedCompanies = ref([]);
 const loading = ref(false);
 const filters = reactive({
     search: '',
@@ -67,6 +68,25 @@ const removeCompany = async (company) => {
     await fetchCompanies();
 };
 
+const removeSelectedCompanies = async () => {
+    if (selectedCompanies.value.length === 0) {
+        return;
+    }
+
+    if (!window.confirm(`Delete ${selectedCompanies.value.length} selected companies?`)) {
+        return;
+    }
+
+    await companyService.bulkDestroy(selectedCompanies.value.map((company) => company.id));
+    selectedCompanies.value = [];
+
+    if (companies.value.length === 1 && filters.page > 1) {
+        filters.page -= 1;
+    }
+
+    await fetchCompanies();
+};
+
 const buildRowActions = (company) => [
     {
         label: 'Edit',
@@ -97,9 +117,20 @@ onMounted(fetchCompanies);
                             <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">Directory</div>
                             <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Company management</h1>
                             <p class="mt-2 text-slate-500">Manage company records with repository-backed CRUD endpoints.</p>
+                            <p class="mt-3 text-sm font-medium text-slate-600">
+                                Selected records: <span class="text-slate-950">{{ selectedCompanies.length }}</span>
+                            </p>
                         </div>
 
                         <div class="flex flex-col gap-3 sm:flex-row">
+                            <Button
+                                label="Delete selected"
+                                icon="pi pi-trash"
+                                severity="danger"
+                                outlined
+                                :disabled="selectedCompanies.length === 0"
+                                @click="removeSelectedCompanies"
+                            />
                             <InputText
                                 v-model="filters.search"
                                 class="w-full sm:w-72"
@@ -118,6 +149,7 @@ onMounted(fetchCompanies);
             <Card class="app-card border-0">
                 <template #content>
                     <DataTable
+                        v-model:selection="selectedCompanies"
                         :value="companies"
                         :loading="loading"
                         lazy
@@ -136,6 +168,8 @@ onMounted(fetchCompanies);
                                 No companies found for the current filters.
                             </div>
                         </template>
+
+                        <Column selection-mode="multiple" header-style="width: 3rem" />
 
                         <Column field="name" header="Name">
                             <template #body="{ data }">

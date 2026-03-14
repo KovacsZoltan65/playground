@@ -14,4 +14,6 @@ interface CompanyRepositoryInterface
     public function update(Company $company, array $attributes): Company;
 
     public function delete(Company $company): bool;
+
+    public function bulkDeleteByIds(array $ids): int;
 }

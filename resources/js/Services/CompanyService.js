@@ -30,4 +30,12 @@ export default {
 
         return response.data;
     },
+
+    async bulkDestroy(ids) {
+        const response = await axios.delete('/companies', {
+            data: { ids },
+        });
+
+        return response.data;
+    },
 };

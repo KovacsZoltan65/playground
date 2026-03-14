@@ -40,4 +40,11 @@ class CompanyRepository implements CompanyRepositoryInterface
     {
         return (bool) $company->delete();
     }
+
+    public function bulkDeleteByIds(array $ids): int
+    {
+        return Company::query()
+            ->whereIn('id', $ids)
+            ->delete();
+    }
 }

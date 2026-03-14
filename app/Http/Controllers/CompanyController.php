@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Data\CompanyData;
-use App\Http\Requests\Company\StoreCompanyRequest;
-use App\Http\Requests\Company\UpdateCompanyRequest;
 use App\Models\Company;
 use App\Services\CompanyService;
 use Illuminate\Http\JsonResponse;
@@ -63,16 +61,11 @@ class CompanyController extends Controller
         ]);
     }
 
-    public function store(StoreCompanyRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
-        $companyData = CompanyData::from([
-            'id' => null,
-            'name' => $request->string('name')->toString(),
-            'email' => $request->input('email'),
-            'phone' => $request->input('phone'),
-            'address' => $request->input('address'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        $this->authorize('create', Company::class);
+
+        $companyData = CompanyData::fromRequest($request);
 
         $company = $this->companyService->create($companyData);
 
@@ -82,16 +75,11 @@ class CompanyController extends Controller
         ], 201);
     }
 
-    public function update(UpdateCompanyRequest $request, Company $company): JsonResponse
+    public function update(Request $request, Company $company): JsonResponse
     {
-        $companyData = CompanyData::from([
-            'id' => $company->id,
-            'name' => $request->string('name')->toString(),
-            'email' => $request->input('email'),
-            'phone' => $request->input('phone'),
-            'address' => $request->input('address'),
-            'is_active' => $request->boolean('is_active'),
-        ]);
+        $this->authorize('update', $company);
+
+        $companyData = CompanyData::fromRequest($request, $company);
 
         $updatedCompany = $this->companyService->update($company, $companyData);
 
@@ -109,6 +97,18 @@ class CompanyController extends Controller
 
         return response()->json([
             'message' => __('Company deleted successfully.'),
+        ]);
+    }
+
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $this->authorize('deleteAny', Company::class);
+
+        $deletedCount = $this->companyService->bulkDelete(CompanyData::validateBulkDeleteIds($request));
+
+        return response()->json([
+            'message' => __('Companies deleted successfully.'),
+            'deleted' => $deletedCount,
         ]);
     }
 }

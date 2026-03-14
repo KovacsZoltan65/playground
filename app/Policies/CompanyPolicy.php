@@ -31,4 +31,9 @@ class CompanyPolicy
     {
         return $user->exists;
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->exists;
+    }
 }

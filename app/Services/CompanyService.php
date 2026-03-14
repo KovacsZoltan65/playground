@@ -54,4 +54,9 @@ class CompanyService
     {
         return $this->companies->delete($company);
     }
+
+    public function bulkDelete(array $ids): int
+    {
+        return $this->companies->bulkDeleteByIds($ids);
+    }
 }

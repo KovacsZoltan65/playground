@@ -79,3 +79,22 @@ it('allows authenticated users to delete companies', function () {
         'id' => $company->id,
     ]);
 });
+
+it('allows authenticated users to bulk delete companies', function () {
+    $user = User::factory()->create();
+    $companies = Company::factory()->count(3)->create();
+
+    $response = $this->actingAs($user)->deleteJson(route('companies.bulk-destroy'), [
+        'ids' => $companies->pluck('id')->all(),
+    ]);
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('deleted', 3);
+
+    foreach ($companies as $company) {
+        $this->assertDatabaseMissing('companies', [
+            'id' => $company->id,
+        ]);
+    }
+});
