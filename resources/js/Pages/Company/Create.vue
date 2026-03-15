@@ -36,22 +36,22 @@ const submit = async () => {
 </script>
 
 <template>
-    <Head title="Create Company" />
+    <Head :title="$t('Create Company')" />
 
     <AuthenticatedLayout>
-        <template #header>Create Company</template>
+        <template #header>{{ $t('Create Company') }}</template>
 
         <Card class="app-card border-0">
             <template #content>
                 <div class="mb-8 flex items-start justify-between gap-4">
                     <div>
-                        <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">Create</div>
-                        <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Add a new company</h1>
-                        <p class="mt-2 text-slate-500">Fill out the form below to create a new company record.</p>
+                        <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">{{ $t('Create') }}</div>
+                        <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{{ $t('Add a new company') }}</h1>
+                        <p class="mt-2 text-slate-500">{{ $t('Fill out the form below to create a new company record.') }}</p>
                     </div>
 
                     <Link :href="route('companies.index')">
-                        <Button label="Back" icon="pi pi-arrow-left" severity="secondary" outlined />
+                        <Button :label="$t('Back')" icon="pi pi-arrow-left" severity="secondary" outlined />
                     </Link>
                 </div>
 
@@ -60,9 +60,9 @@ const submit = async () => {
 
                     <div class="flex justify-end gap-3">
                         <Link :href="route('companies.index')">
-                            <Button type="button" label="Cancel" severity="secondary" outlined />
+                            <Button type="button" :label="$t('Cancel')" severity="secondary" outlined />
                         </Link>
-                        <Button type="submit" label="Create company" icon="pi pi-check" :loading="processing" />
+                        <Button type="submit" :label="$t('Create company')" icon="pi pi-check" :loading="processing" />
                     </div>
                 </form>
             </template>

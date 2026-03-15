@@ -1,30 +1,35 @@
 <script setup>
-import { computed, ref } from "vue";
-import { Link, usePage } from "@inertiajs/vue3";
-import Avatar from "primevue/avatar";
+import { computed, ref } from 'vue';
+import { currentLocale, trans } from 'laravel-vue-i18n';
+import { Link, usePage } from '@inertiajs/vue3';
+import Avatar from 'primevue/avatar';
 
 const page = usePage();
 const sidebarOpen = ref(false);
 
 const user = computed(() => page.props.auth.user);
 
-const navigationItems = [
-    {
-        label: "Dashboard",
-        icon: "pi pi-home",
-        route: "dashboard",
-    },
-    {
-        label: "Companies",
-        icon: "pi pi-building",
-        route: "companies.index",
-    },
-    {
-        label: "Profil",
-        icon: "pi pi-user",
-        route: "profile.edit",
-    },
-];
+const navigationItems = computed(() => {
+    currentLocale.value;
+
+    return [
+        {
+            label: trans('Dashboard'),
+            icon: 'pi pi-home',
+            route: 'dashboard',
+        },
+        {
+            label: trans('Companies'),
+            icon: 'pi pi-building',
+            route: 'companies.index',
+        },
+        {
+            label: trans('Profile'),
+            icon: 'pi pi-user',
+            route: 'profile.edit',
+        },
+    ];
+});
 
 const isActive = (name) => route().current(name);
 </script>
@@ -61,13 +66,12 @@ const isActive = (name) => route().current(name);
                 </button>
             </div>
 
-            <div class="mb-8 rounded-[2rem] bg-white/5 p-5 ring-1 ring-white/10">
+                <div class="mb-8 rounded-[2rem] bg-white/5 p-5 ring-1 ring-white/10">
                 <div class="mb-2 text-xs uppercase tracking-[0.3em] text-emerald-300">
-                    Sakai style
+                    {{ $t('Sakai style') }}
                 </div>
                 <p class="text-sm leading-6 text-slate-300">
-                    PrimeVue komponensekkel felépített admin shell Laravel 12 + Inertia
-                    kornyezetben.
+                    {{ $t('PrimeVue components power this admin shell on Laravel 12 and Inertia.') }}
                 </p>
             </div>
 
@@ -90,10 +94,9 @@ const isActive = (name) => route().current(name);
             <div
                 class="mt-auto rounded-[2rem] bg-gradient-to-br from-emerald-500/20 to-sky-400/20 p-5 ring-1 ring-white/10"
             >
-                <div class="mb-3 text-sm font-semibold">Deployment tip</div>
+                <div class="mb-3 text-sm font-semibold">{{ $t('Deployment tip') }}</div>
                 <p class="text-sm leading-6 text-slate-300">
-                    Wamp alatt a projekt webrootja a
-                    <span class="font-semibold text-white">public</span> mappa legyen.
+                    {{ $t('The project webroot should point to the public directory when using Wamp.') }}
                 </p>
             </div>
         </aside>
@@ -122,7 +125,7 @@ const isActive = (name) => route().current(name);
                             <div
                                 class="text-xs uppercase tracking-[0.3em] text-slate-400"
                             >
-                                Admin workspace
+                                {{ $t('Admin workspace') }}
                             </div>
                             <div
                                 v-if="$slots.header"
@@ -134,7 +137,7 @@ const isActive = (name) => route().current(name);
                                 v-else
                                 class="text-2xl font-semibold tracking-tight text-slate-900"
                             >
-                                Dashboard
+                                {{ $t('Dashboard') }}
                             </div>
                         </div>
                     </div>

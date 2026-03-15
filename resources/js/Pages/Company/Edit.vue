@@ -57,10 +57,10 @@ onMounted(loadCompany);
 </script>
 
 <template>
-    <Head title="Edit Company" />
+    <Head :title="$t('Edit Company')" />
 
     <AuthenticatedLayout>
-        <template #header>Edit Company</template>
+        <template #header>{{ $t('Edit Company') }}</template>
 
         <Card class="app-card border-0">
             <template #content>
@@ -71,13 +71,13 @@ onMounted(loadCompany);
                 <template v-else>
                     <div class="mb-8 flex items-start justify-between gap-4">
                         <div>
-                            <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">Edit</div>
-                            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Update company</h1>
-                            <p class="mt-2 text-slate-500">Edit the selected company record and save your changes.</p>
+                            <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">{{ $t('Edit') }}</div>
+                            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{{ $t('Update company') }}</h1>
+                            <p class="mt-2 text-slate-500">{{ $t('Edit the selected company record and save your changes.') }}</p>
                         </div>
 
                         <Link :href="route('companies.index')">
-                            <Button label="Back" icon="pi pi-arrow-left" severity="secondary" outlined />
+                            <Button :label="$t('Back')" icon="pi pi-arrow-left" severity="secondary" outlined />
                         </Link>
                     </div>
 
@@ -86,9 +86,9 @@ onMounted(loadCompany);
 
                         <div class="flex justify-end gap-3">
                             <Link :href="route('companies.index')">
-                                <Button type="button" label="Cancel" severity="secondary" outlined />
+                                <Button type="button" :label="$t('Cancel')" severity="secondary" outlined />
                             </Link>
-                            <Button type="submit" label="Save changes" icon="pi pi-save" :loading="processing" />
+                            <Button type="submit" :label="$t('Save changes')" icon="pi pi-save" :loading="processing" />
                         </div>
                     </form>
                 </template>
