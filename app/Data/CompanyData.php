@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Support\Validation\ValidationContext;
 
 class CompanyData extends Data
 {
@@ -56,7 +57,7 @@ class CompanyData extends Data
         ])->validate()['ids'];
     }
 
-    public static function rules(): array
+    public static function rules(?ValidationContext $context = null): array
     {
         /** @var Company|null $company */
         $company = request()->route('company');

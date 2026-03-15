@@ -11,6 +11,14 @@ defineProps({
 });
 
 const menu = ref(null);
+const menuPt = {
+    root: { class: 'app-row-action-menu' },
+    item: { class: 'app-row-action-menu-item' },
+    itemContent: { class: 'app-row-action-menu-item-content' },
+    itemLink: { class: 'app-row-action-menu-item-link' },
+    itemIcon: { class: 'app-row-action-menu-item-icon' },
+    itemLabel: { class: 'app-row-action-menu-item-label' },
+};
 
 const toggle = (event) => {
     menu.value?.toggle(event);
@@ -32,6 +40,7 @@ const toggle = (event) => {
             id="row-action-menu"
             ref="menu"
             :model="items"
+            :pt="menuPt"
             popup
         />
     </div>
