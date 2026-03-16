@@ -45,7 +45,13 @@ class CompanyController extends Controller
         $this->authorize('viewAny', Company::class);
 
         $payload = $this->companyService->listForIndex(
-            search: $request->string('search')->toString() ?: null,
+            filters: [
+                'global' => $request->string('search')->toString() ?: null,
+                'name' => $request->string('name')->toString() ?: null,
+                'email' => $request->string('email')->toString() ?: null,
+                'phone' => $request->string('phone')->toString() ?: null,
+                'is_active' => $this->normalizeBooleanFilter($request->input('is_active')),
+            ],
             perPage: (int) $request->integer('per_page', 10),
         );
 
@@ -110,5 +116,18 @@ class CompanyController extends Controller
             'message' => __('Companies deleted successfully.'),
             'deleted' => $deletedCount,
         ]);
+    }
+
+    private function normalizeBooleanFilter(mixed $value): ?bool
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
     }
 }

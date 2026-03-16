@@ -8,8 +8,14 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class CompanyRepository implements CompanyRepositoryInterface
 {
-    public function paginateForIndex(?string $search = null, int $perPage = 10): LengthAwarePaginator
+    public function paginateForIndex(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
+        $search = $filters['global'] ?? null;
+        $name = $filters['name'] ?? null;
+        $email = $filters['email'] ?? null;
+        $phone = $filters['phone'] ?? null;
+        $isActive = $filters['is_active'] ?? null;
+
         return Company::query()
             ->when($search, function ($query, $searchTerm) {
                 $query->where(function ($companyQuery) use ($searchTerm) {
@@ -18,6 +24,12 @@ class CompanyRepository implements CompanyRepositoryInterface
                         ->orWhere('email', 'like', "%{$searchTerm}%")
                         ->orWhere('phone', 'like', "%{$searchTerm}%");
                 });
+            })
+            ->when($name, fn ($query, $value) => $query->where('name', 'like', "%{$value}%"))
+            ->when($email, fn ($query, $value) => $query->where('email', 'like', "%{$value}%"))
+            ->when($phone, fn ($query, $value) => $query->where('phone', 'like', "%{$value}%"))
+            ->when($isActive !== null, function ($query) use ($isActive) {
+                $query->where('is_active', $isActive);
             })
             ->orderBy('name')
             ->paginate($perPage)

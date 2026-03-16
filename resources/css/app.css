@@ -37,6 +37,16 @@
             linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(244, 247, 251, 0.9));
     }
 
+    @screen lg {
+        html,
+        body,
+        #app,
+        .app-shell {
+            height: 100vh;
+            overflow: hidden;
+        }
+    }
+
     .app-card {
         border: 1px solid var(--app-border);
         border-radius: 1.5rem;

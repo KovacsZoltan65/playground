@@ -7,7 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface CompanyRepositoryInterface
 {
-    public function paginateForIndex(?string $search = null, int $perPage = 10): LengthAwarePaginator;
+    public function paginateForIndex(array $filters = [], int $perPage = 10): LengthAwarePaginator;
 
     public function create(array $attributes): Company;
 

@@ -42,6 +42,47 @@ it('allows authenticated users to list companies through the json endpoint', fun
         ->assertJsonCount(3, 'data');
 });
 
+it('filters companies by the datatable global search', function () {
+    Company::factory()->create([
+        'name' => 'Acme Industries',
+        'email' => 'hello@acme.test',
+    ]);
+    Company::factory()->create([
+        'name' => 'Beta Logistics',
+        'email' => 'beta@example.test',
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'search' => 'Acme',
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Acme Industries');
+});
+
+it('filters companies by datatable status filter', function () {
+    Company::factory()->create([
+        'name' => 'Active Company',
+        'is_active' => true,
+    ]);
+    Company::factory()->create([
+        'name' => 'Inactive Company',
+        'is_active' => false,
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'is_active' => 'false',
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Inactive Company')
+        ->assertJsonPath('data.0.is_active', false);
+});
+
 it('allows authenticated users to create companies', function () {
     $user = userWithRole(Roles::HR);
 

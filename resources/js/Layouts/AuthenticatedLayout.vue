@@ -38,7 +38,7 @@ const isActive = (name) => route().current(name);
     <div class="app-shell lg:flex">
         <aside
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-            class="fixed inset-y-0 left-0 z-40 flex w-80 flex-col border-r border-slate-200/60 bg-slate-950 px-6 py-6 text-white transition-transform duration-300 lg:static lg:min-h-screen lg:translate-x-0"
+            class="fixed inset-y-0 left-0 z-40 flex w-80 flex-col overflow-y-auto border-r border-slate-200/60 bg-slate-950 px-6 py-6 text-white transition-transform duration-300 lg:static lg:h-screen lg:translate-x-0"
         >
             <div class="mb-8 flex items-center justify-between">
                 <Link :href="route('dashboard')" class="flex items-center gap-4">
@@ -107,7 +107,8 @@ const isActive = (name) => route().current(name);
             @click="sidebarOpen = false"
         />
 
-        <div class="min-w-0 flex-1">
+        <div class="min-w-0 flex-1 overflow-hidden lg:h-screen">
+            <div class="flex h-full min-h-0 flex-col overflow-y-auto">
             <header
                 class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10"
             >
@@ -172,9 +173,10 @@ const isActive = (name) => route().current(name);
                 </div>
             </header>
 
-            <main class="px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+            <main class="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
                 <slot />
             </main>
+            </div>
         </div>
     </div>
 </template>

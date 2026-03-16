@@ -13,9 +13,9 @@ class CompanyService
     ) {
     }
 
-    public function listForIndex(?string $search = null, int $perPage = 10): array
+    public function listForIndex(array $filters = [], int $perPage = 10): array
     {
-        $paginator = $this->companies->paginateForIndex($search, $perPage);
+        $paginator = $this->companies->paginateForIndex($filters, $perPage);
 
         return [
             'data' => $paginator->getCollection()

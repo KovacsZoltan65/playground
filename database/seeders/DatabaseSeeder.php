@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Permissions\Roles;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Spatie\Activitylog\Facades\Activity;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,18 +16,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            PermissionSeeder::class,
-            RoleSeeder::class,
-        ]);
+        Activity::withoutLogs(function (): void {
+            $this->call([
+                PermissionSeeder::class,
+                RoleSeeder::class,
+            ]);
 
-        $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+            $user = User::factory()->create([
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]);
 
-        $user->assignRole(Roles::ADMIN);
+            $user->assignRole(Roles::ADMIN);
 
-        Company::factory()->count(12)->create();
+            Company::factory()->count(12)->create();
+        });
     }
 }

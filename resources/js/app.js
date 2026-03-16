@@ -11,6 +11,21 @@ import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const stringifyMetadata = (value) => {
+    try {
+        return typeof value === 'object' ? JSON.stringify(value) : String(value);
+    } catch {
+        return 'Unserializable metadata';
+    }
+};
+
+const sendFrontendError = async (payload) => {
+    try {
+        await window.axios.post(route('frontend-errors.store'), payload);
+    } catch {
+        // Avoid recursive client-side logging if the logging request itself fails.
+    }
+};
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -20,7 +35,50 @@ createInertiaApp({
             import.meta.glob('./Pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
-        return createApp({ render: () => h(App, props) })
+        const app = createApp({ render: () => h(App, props) });
+
+        app.config.errorHandler = (error, instance, info) => {
+            void sendFrontendError({
+                type: 'vue-error',
+                message: error?.message ?? 'Vue error',
+                component: instance?.$options?.name ?? null,
+                stack: error?.stack ?? null,
+                metadata: {
+                    info,
+                },
+                url: window.location.href,
+            });
+        };
+
+        window.addEventListener('error', (event) => {
+            void sendFrontendError({
+                type: 'window-error',
+                message: event.message,
+                stack: event.error?.stack ?? null,
+                metadata: {
+                    filename: event.filename,
+                    lineno: event.lineno,
+                    colno: event.colno,
+                },
+                url: window.location.href,
+            });
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event.reason;
+
+            void sendFrontendError({
+                type: 'unhandled-rejection',
+                message: reason?.message ?? String(reason),
+                stack: reason?.stack ?? null,
+                metadata: {
+                    reason: stringifyMetadata(reason),
+                },
+                url: window.location.href,
+            });
+        });
+
+        return app
             .use(plugin)
             .use(i18nVue, {
                 resolve: async (lang) => {

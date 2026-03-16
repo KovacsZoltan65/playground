@@ -19,5 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->report(function (\Throwable $throwable) {
+            app(\App\Services\ActivityLogService::class)->logException($throwable, [
+                'url' => request()?->fullUrl(),
+                'method' => request()?->method(),
+                'ip' => request()?->ip(),
+                'user_id' => request()?->user()?->id,
+            ]);
+        });
     })->create();
