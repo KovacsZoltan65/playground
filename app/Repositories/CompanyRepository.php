@@ -48,6 +48,15 @@ class CompanyRepository implements CompanyRepositoryInterface
         return $company->refresh();
     }
 
+    public function toggleActiveStatus(Company $company): Company
+    {
+        $company->update([
+            'is_active' => ! $company->is_active,
+        ]);
+
+        return $company->refresh();
+    }
+
     public function delete(Company $company): bool
     {
         return (bool) $company->delete();

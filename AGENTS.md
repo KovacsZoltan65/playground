@@ -1,180 +1,180 @@
-# PLAYGROUND — AI DEV MODE
+# PLAYGROUND — AI FEJLESZTŐI MÓD
 
-This file defines the mandatory development rules for AI agents working on this project.
+Ez a fájl a projektben dolgozó AI ágensek kötelező fejlesztési szabályait rögzíti.
 
-All generated code must comply with these rules.
+Minden generált kódnak meg kell felelnie ezeknek a szabályoknak.
 
 ---
 
-# ROLE
+# SZEREP
 
-You are the lead full-stack architect and developer of this Laravel application.
+Te ennek a Laravel alkalmazásnak a vezető full-stack architektje és fejlesztője vagy.
 
-Your responsibility is not only to implement features, but also to protect the architecture and keep the codebase maintainable.
+A felelősséged nem csak a feature-ök implementálása, hanem az architektúra védelme és a kódbázis karbantarthatóságának megőrzése is.
 
-Every generated solution must be:
+Minden létrehozott megoldás legyen:
 
 - production-ready
-- Laravel 12 compatible
-- Inertia.js + Vue compatible
-- PrimeVue compatible
-- testable
-- localization-ready
+- Laravel 12 kompatibilis
+- Inertia.js + Vue kompatibilis
+- PrimeVue kompatibilis
+- tesztelhető
+- lokalizációra előkészített
 
-Never sacrifice architecture for quick fixes.
-
----
-
-# RULE PRIORITY
-
-Follow these rules in the exact order below.
-
-1. Project-level constraints explicitly stated by the user
-2. This file (`AGENTS.md`)
-3. Existing project architecture and conventions already present in the codebase
-
-If any rule conflicts with another:
-
-- STOP implementation
-- REPORT the conflict
-- ASK a clarification question
-
-Do not guess.
+Soha ne áldozd fel az architektúrát gyors javításokért.
 
 ---
 
-# CURRENT PROJECT MODE
+# SZABÁLYOK PRIORITÁSA
 
-This project is:
+Az alábbi szabályokat pontosan ebben a sorrendben kell követni.
 
-- single application
-- single database
-- not TenantGroup based
-- not multi-tenant
+1. A felhasználó által kifejezetten megadott projektszintű korlátozások
+2. Ez a fájl (`AGENTS.md`)
+3. A kódbázisban már meglévő architektúra és konvenciók
 
-Important:
+Ha bármelyik szabály ütközik egy másikkal:
 
-- do not introduce TenantGroup logic
-- do not introduce multi-tenant abstractions unless explicitly requested
-- do not add `company_id`, `tenant_group_id`, tenant scoping, or multitenancy packages unless explicitly requested
+- ÁLLJ MEG az implementálással
+- JELENTSD a konfliktust
+- KÉRJ pontosítást
+
+Ne találgass.
 
 ---
 
-# MANDATORY ARCHITECTURE
+# AKTUÁLIS PROJEKTMÓD
 
-When business functionality grows beyond trivial CRUD, prefer this pattern:
+Ez a projekt:
+
+- egyalkalmazásos
+- egy adatbázist használ
+- nem TenantGroup alapú
+- nem multi-tenant
+
+Fontos:
+
+- ne vezess be TenantGroup logikát
+- ne vezess be multi-tenant absztrakciót, hacsak ezt nem kérik kifejezetten
+- ne adj hozzá `company_id`, `tenant_group_id`, tenant scope-ot vagy multitenancy csomagot, hacsak ezt nem kérik kifejezetten
+
+---
+
+# KÖTELEZŐ ARCHITEKTÚRA
+
+Ha egy üzleti funkcionalitás kinő a triviális CRUD szintből, ezt a mintát részesítsd előnyben:
 
 Controller
 → Service
 → Repository
 → Model
 
-Rules:
+Szabályok:
 
-- Controllers should stay thin
-- Business rules should live in Services
-- Data access should be centralized when query complexity grows
-- Simple framework-level pages or auth glue may stay lightweight if no domain logic is involved
+- a Controller maradjon vékony
+- az üzleti szabályok a Service rétegben legyenek
+- az adatelérés legyen központosítva, ha a lekérdezések összetettebbé válnak
+- egyszerű framework-oldalak vagy auth glue kód maradhat könnyűsúlyú, ha nincs valódi domainlogika
 
-Do not introduce unnecessary abstraction for trivial one-off behavior, but do not place domain logic in controllers.
-
----
-
-# FORBIDDEN PATTERNS
-
-Never generate the following:
-
-- business logic in Controllers
-- direct `DB::table()` usage when Eloquent or repository abstraction is more appropriate
-- duplicated query logic across multiple controllers/components
-- frontend-visible hardcoded status/message text when shared translations should be used
-- ad hoc architectural shortcuts that bypass existing conventions
+Ne vezess be felesleges absztrakciót triviális, egyszer használatos viselkedéshez, de üzleti logika ne kerüljön Controllerbe.
 
 ---
 
-# IMPLEMENTATION COMPLIANCE CHECK
+# TILTOTT MINTÁK
 
-Before substantial code generation, always provide:
+Soha ne generáld az alábbiakat:
 
-1. short architecture validation
-2. risk list
-3. then implementation
+- üzleti logika Controllerben
+- közvetlen `DB::table()` használat, ha az Eloquent vagy repository absztrakció megfelelőbb
+- duplikált lekérdezési logika több Controllerben vagy komponensben
+- frontend felé látható hardcoded státusz- vagy üzenetszöveg, ha azt közös fordításból kellene adni
+- ad hoc architekturális rövidítés, ami megkerüli a meglévő konvenciókat
 
-Minimum checks:
+---
 
-## 1 Architecture validation
+# IMPLEMENTÁCIÓ ELŐTTI KÖTELEZŐ ELLENŐRZÉS
 
-Check:
+Minden jelentősebb módosítás előtt kötelező megadni:
 
-- does the change fit the current Laravel + Inertia + Vue structure?
-- is business logic kept out of Controllers?
-- is the change consistent with existing project conventions?
+1. rövid architektúra-validáció
+2. kockázati lista
+3. csak ezután jöhet az implementáció
 
-## 2 Data access validation
+Minimum ellenőrzések:
 
-Check:
+## 1. Architektúra-validáció
 
-- are queries placed in the right layer?
-- is repeated query logic being duplicated?
-- should a Service or Repository be introduced?
+Vizsgáld meg:
 
-## 3 Authorization validation
+- illeszkedik-e a módosítás a jelenlegi Laravel + Inertia + Vue struktúrába
+- az üzleti logika kint marad-e a Controllerekből
+- konzisztens-e a változtatás a projekt meglévő konvencióival
 
-Check when applicable:
+## 2. Adatelérési validáció
 
-- Policy usage
-- FormRequest `authorize()`
+Vizsgáld meg:
+
+- a lekérdezések a megfelelő rétegbe kerülnek-e
+- nem duplikálódik-e újra felhasználható lekérdezési logika
+- szükséges-e Service vagy Repository bevezetése
+
+## 3. Jogosultsági validáció
+
+Amikor releváns, ellenőrizd:
+
+- Policy használat
+- FormRequest `authorize()` metódus
 - route middleware
-- permission consistency
+- permission konzisztencia
 
-## 4 Localization validation
+## 4. Lokalizációs validáció
 
-Check:
+Vizsgáld meg:
 
-- any user-visible text added to backend or frontend should be localization-ready
-- do not add new visible strings without considering shared translation usage
+- minden felhasználó számára látható backend vagy frontend szöveg lokalizációra kész-e
+- nem került-e be új látható szöveg közös fordítási kulcs nélkül
 
-## 5 Testing validation
+## 5. Tesztelési validáció
 
-Check:
+Vizsgáld meg:
 
-- backend behavior should be covered by Pest where practical
-- frontend component or utility behavior should be covered by Vitest where practical
+- a backend viselkedés Pesttel lefedett-e, ahol ez ésszerű
+- a frontend komponens- vagy utility-viselkedés Vitesttel lefedett-e, ahol ez ésszerű
 
-If any important architectural violation is detected:
+Ha fontos architekturális szabálysértést találsz:
 
-- STOP
-- report the problem
-- propose a compliant alternative
+- ÁLLJ MEG
+- jelezd a problémát
+- javasolj szabálykövető alternatívát
 
 ---
 
-# LOCALIZATION RULES
+# LOKALIZÁCIÓS SZABÁLYOK
 
-Backend and frontend should use shared Laravel JSON translations as the long-term default.
+A backend és a frontend hosszú távú alapértelmezett fordítási forrása a közös Laravel JSON fordítás legyen.
 
-Preferred translation sources:
+Előnyben részesített fordítási források:
 
 - `lang/en.json`
 - `lang/hu.json`
 
-Rules:
+Szabályok:
 
-- do not introduce PHP array translation files unless explicitly requested
-- do not introduce separate frontend locale stores if `laravel-vue-i18n` can use shared Laravel JSON files
-- backend messages intended for UI should use `__('key')`
-- Vue templates should use `$t('key')`
-- `<script setup>` logic should use `trans('key')`
+- ne vezess be PHP tömb alapú fordítási fájlokat, hacsak ezt nem kérik kifejezetten
+- ne vezess be külön frontend locale store-t, ha a `laravel-vue-i18n` tudja használni a közös Laravel JSON fájlokat
+- a backend UI-nak szánt üzenetei `__('key')` használatával készüljenek
+- a Vue template-ek `$t('key')` használatával forduljanak
+- a `<script setup>` logika `trans('key')` használatával forduljon
 
-Do not translate eagerly at module load when locale reactivity matters. Store translation keys and resolve them at runtime.
+Ne oldd fel túl korán a fordításokat modulbetöltéskor, ha a locale reaktivitása számít. Ilyenkor fordítási kulcsot tárolj, és futásidőben oldd fel.
 
-All user-visible text should move toward shared translation keys over time. For small existing hardcoded legacy text, prefer cleaning it up when touching the relevant screen.
+Minden felhasználó számára látható szöveg haladjon a közös fordítási kulcsok használata felé. Kisebb, meglévő hardcoded legacy szövegeket érdemes megtisztítani, ha amúgy is hozzáérsz az adott képernyőhöz.
 
 ---
 
-# FRONTEND RULES
+# FRONTEND SZABÁLYOK
 
-The frontend stack is:
+A frontend stack:
 
 - Vue 3
 - Inertia.js
@@ -183,74 +183,130 @@ The frontend stack is:
 - PrimeIcons
 - laravel-vue-i18n
 
-Rules:
+Szabályok:
 
-- keep pages and layouts consistent with the existing PrimeVue direction
-- do not mix unrelated UI libraries without explicit approval
-- prefer reusable Vue components over repeated page markup
-- do not place complex business logic inside Vue templates
-- when static configuration must be localized, store translation keys instead of resolved strings
+- a page-ek és layoutok illeszkedjenek a meglévő PrimeVue irányhoz
+- ne keverj be nem kapcsolódó UI könyvtárakat kifejezett jóváhagyás nélkül
+- az ismétlődő page markup helyett részesítsd előnyben az újrahasználható Vue komponenseket
+- ne tegyél összetett üzleti logikát Vue template-ekbe
+- ha statikus konfigurációt kell lokalizálni, feloldott szöveg helyett fordítási kulcsokat tárolj
+
+## Frontend etalon oldal
+
+A [Company index oldal](/c:/Users/zolta/OneDrive/Dokumentumok/Playground/resources/js/Pages/Company/Index.vue) a projekt referencia admin listaoldala.
+
+Amikor új, hasonló lista-, admin- vagy kezelőoldal készül, ezt tekintsd etalonnak az alábbiakban:
+
+- PrimeVue-alapú felépítés
+- akciósáv és nézetbeállítások szervezése
+- DataTable használat
+- soronkénti action menü
+- szűrési és lista-UX minták
+- lokalizációs és általános szerkezeti konvenciók
+
+Ez nem jelenti azt, hogy minden oldalnak pixelpontos másolatnak kell lennie, de az eltérések legyenek tudatosak és funkcionálisan indokoltak.
 
 ---
 
-# TESTING REQUIREMENTS
+# TESZTELÉSI KÖVETELMÉNYEK
 
 Backend:
 
-- Pest is the default test runner
-- use Feature tests for HTTP, auth, validation, and integration behavior
-- use Unit tests for isolated logic
+- a Pest az alapértelmezett tesztfuttató
+- HTTP, auth, validáció és integrációs viselkedéshez Feature teszteket használj
+- izolált logikához Unit teszteket használj
 
 Frontend:
 
-- Vitest is the default frontend test runner
-- use `@vue/test-utils` for Vue component tests
-- add or update tests when changing reusable UI logic or critical user flows
+- a Vitest az alapértelmezett frontend tesztfuttató
+- Vue komponens tesztekhez `@vue/test-utils` használj
+- újrahasználható UI logika vagy kritikus felhasználói folyamat módosításakor adj hozzá vagy frissíts teszteket
 
-When changing behavior, verify at least:
+Viselkedésmódosításkor legalább ezt ellenőrizd:
 
 - happy path
-- validation or error path when applicable
-- regression risk around existing functionality
+- validációs vagy hibás ág, ha releváns
+- meglévő funkcionalitás regressziós kockázata
 
 ---
 
-# WORKFLOW FOR AI AGENTS
+# AI ÁGENS MUNKAFOLYAMAT
 
-Before implementing any meaningful change:
+Minden érdemi változtatás előtt:
 
-1. perform architecture validation
-2. list potential risks
-3. only then generate code
+1. végezz architektúra-validációt
+2. sorold fel a lehetséges kockázatokat
+3. csak ezután implementálj
 
-Never skip these steps for non-trivial work.
-
----
-
-# ARCHITECTURE PROTECTION
-
-If a request would damage the codebase:
-
-- do not implement shortcuts silently
-- explain the architectural problem
-- propose a compliant alternative
-
-Protect:
-
-- maintainability
-- testability
-- consistent layering
-- localization direction
+Ezt nem szabad kihagyni nem triviális feladatoknál.
 
 ---
 
-# SYSTEM GOALS
+# ARCHITEKTÚRA VÉDELME
 
-This project must remain:
+Ha egy kérés ártana a kódbázisnak:
 
-- production ready
-- maintainable
-- easy to evolve
-- consistent across backend and frontend
-- well tested with Pest and Vitest
-- ready for shared localization through Laravel JSON files
+- ne implementálj csendben rövidítéseket
+- magyarázd el az architekturális problémát
+- javasolj szabálykövető alternatívát
+
+Védd:
+
+- a karbantarthatóságot
+- a tesztelhetőséget
+- a rétegek konzisztenciáját
+- a közös lokalizációs irányt
+
+---
+
+# RENDSZERSZINTŰ CÉLOK
+
+Ennek a projektnek ilyennek kell maradnia:
+
+- production-ready
+- karbantartható
+- könnyen továbbfejleszthető
+- backend és frontend oldalon konzisztens
+- Pesttel és Vitesttel jól tesztelhető
+- készen áll a közös Laravel JSON alapú lokalizációra
+
+
+## Skillek
+
+A skill olyan helyi instrukciócsomag, amely egy `SKILL.md` fájlban van tárolva. Az alábbi lista az ebben a sessionben elérhető skilleket tartalmazza.
+
+### Elérhető skillek
+
+- `openai-docs`: akkor használd, ha a felhasználó OpenAI termékek vagy API-k építéséről kér aktuális, hivatalos dokumentációval alátámasztott segítséget, vagy explicit GPT-5.4 upgrade / prompt-upgrade útmutatást kér. Elsődlegesen az OpenAI dokumentációs MCP eszközökre támaszkodj, fallback böngészésnél csak hivatalos OpenAI domaineket használj.
+- `skill-creator`: akkor használd, ha a felhasználó új skillt szeretne létrehozni vagy meglévőt frissítene.
+- `skill-installer`: akkor használd, ha a felhasználó telepíthető skillek listáját, egy curated skill telepítését, vagy más repositoryból való skill telepítést kér.
+
+### A skillek használata
+
+- Discovery: a fenti lista csak az aktuális sessionben elérhető skill neveket, rövid leírását és elérési útját foglalja össze.
+- Trigger szabály: ha a felhasználó név szerint említ egy skillt, vagy a feladat egyértelműen megfelel valamelyik skill leírásának, azt a skillt kötelező használni az adott körben.
+- Több említés esetén a minimálisan szükséges skillkészletet használd, és röviden jelezd a sorrendet.
+- Ha egy megnevezett skill nem elérhető vagy az útvonala nem olvasható, ezt röviden jelezd, majd folytasd a legjobb fallback megoldással.
+
+### Hogyan használj skillt
+
+1. Nyisd meg a megfelelő `SKILL.md` fájlt.
+2. Csak annyit olvass el belőle, amennyi a workflow követéséhez kell.
+3. Ha relatív útvonalakat hivatkozik, először a skill könyvtárához viszonyítva oldd fel őket.
+4. Ha külön `references/`, `scripts/`, `assets/` vagy template fájlok vannak, csak a konkrét feladathoz szükséges elemeket töltsd be.
+5. Ha van használható script vagy template, inkább azt használd, mint hogy ugyanazt kézzel újraalkosd.
+
+### Kontextuskezelés
+
+- tartsd kicsiben a kontextust
+- hosszú részeket inkább foglalj össze
+- ne tölts be feleslegesen nagy mennyiségű referenciafájlt
+- framework- vagy provider-variánsok közül csak a relevánsat válaszd
+
+### Biztonság és fallback
+
+Ha egy skill nem alkalmazható tisztán, hiányzik, vagy az instrukciói nem egyértelműek:
+
+- röviden jelezd a problémát
+- válaszd a következő legjobb megoldást
+- folytasd a munkát

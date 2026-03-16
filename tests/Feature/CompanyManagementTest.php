@@ -141,6 +141,25 @@ it('allows authenticated users to delete companies', function () {
     ]);
 });
 
+it('allows authenticated users to toggle company active status', function () {
+    $user = userWithRole(Roles::MANAGER);
+    $company = Company::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs($user)
+        ->patchJson(route('companies.toggle-active', $company));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.is_active', false);
+
+    $this->assertDatabaseHas('companies', [
+        'id' => $company->id,
+        'is_active' => false,
+    ]);
+});
+
 it('allows authenticated users to bulk delete companies', function () {
     $user = userWithRole(Roles::ADMIN);
     $companies = Company::factory()->count(3)->create();
@@ -212,6 +231,17 @@ it('forbids updating companies without permission', function () {
         'address' => 'Updated Address',
         'is_active' => false,
     ]);
+
+    $response->assertForbidden();
+});
+
+it('forbids toggling company status without permission', function () {
+    $company = Company::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $response = $this->actingAs(User::factory()->create())
+        ->patchJson(route('companies.toggle-active', $company));
 
     $response->assertForbidden();
 });

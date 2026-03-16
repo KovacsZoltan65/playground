@@ -106,6 +106,18 @@ class CompanyController extends Controller
         ]);
     }
 
+    public function toggleActiveStatus(Company $company): JsonResponse
+    {
+        $this->authorize('update', $company);
+
+        $updatedCompany = $this->companyService->toggleActiveStatus($company);
+
+        return response()->json([
+            'message' => __('Company status updated successfully.'),
+            'data' => $updatedCompany,
+        ]);
+    }
+
     public function bulkDestroy(Request $request): JsonResponse
     {
         $this->authorize('deleteAny', Company::class);

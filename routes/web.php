@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/companies/{company}/edit', [CompanyController::class, 'edit'])->name('companies.edit');
     Route::get('/companies/{company}', [CompanyController::class, 'show'])->name('companies.show');
     Route::post('/companies', [CompanyController::class, 'store'])->name('companies.store');
+    Route::patch('/companies/{company}/toggle-active', [CompanyController::class, 'toggleActiveStatus'])->name('companies.toggle-active');
     Route::delete('/companies', [CompanyController::class, 'bulkDestroy'])->name('companies.bulk-destroy');
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');

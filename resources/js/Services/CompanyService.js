@@ -30,6 +30,14 @@ class CompanyService extends BaseService {
         return response.data;
     }
 
+    async toggleActiveStatus(companyId) {
+        const response = await this.apiClient.patch(
+            `${this.url}/${companyId}/toggle-active`
+        );
+
+        return response.data;
+    }
+
     async destroy(companyId) {
         const response = await this.delete(`${this.url}/${companyId}`);
 

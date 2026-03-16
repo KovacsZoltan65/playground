@@ -50,6 +50,13 @@ class CompanyService
         return CompanyData::fromModel($updatedCompany);
     }
 
+    public function toggleActiveStatus(Company $company): CompanyData
+    {
+        $updatedCompany = $this->companies->toggleActiveStatus($company);
+
+        return CompanyData::fromModel($updatedCompany);
+    }
+
     public function delete(Company $company): bool
     {
         return $this->companies->delete($company);
