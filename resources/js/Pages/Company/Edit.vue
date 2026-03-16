@@ -1,9 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { buildVuelidateRules } from '@/Support/validation/buildVuelidateRules';
+import companyValidationSchema from '@/Validation/schemas/company.json';
 import CompanyFields from '@/Pages/Company/Partials/CompanyFields.vue';
 import companyService from '@/Services/CompanyService';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { trans } from 'laravel-vue-i18n';
+import useVuelidate from '@vuelidate/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import ProgressSpinner from 'primevue/progressspinner';
@@ -25,6 +29,14 @@ const form = reactive({
     is_active: true,
 });
 const errors = reactive({});
+const rules = computed(() =>
+    buildVuelidateRules(companyValidationSchema, {
+        translator: trans,
+    }),
+);
+const v$ = useVuelidate(rules, form, {
+    $autoDirty: true,
+});
 
 const loadCompany = async () => {
     loading.value = true;
@@ -32,6 +44,7 @@ const loadCompany = async () => {
     try {
         const response = await companyService.show(props.companyId);
         Object.assign(form, response.data);
+        v$.value.$reset();
     } finally {
         loading.value = false;
     }
@@ -40,6 +53,13 @@ const loadCompany = async () => {
 const submit = async () => {
     processing.value = true;
     Object.keys(errors).forEach((key) => delete errors[key]);
+
+    const isValid = await v$.value.$validate();
+
+    if (!isValid) {
+        processing.value = false;
+        return;
+    }
 
     try {
         await companyService.update(props.companyId, form);
@@ -82,7 +102,7 @@ onMounted(loadCompany);
                     </div>
 
                     <form class="space-y-8" @submit.prevent="submit">
-                        <CompanyFields :form="form" :errors="errors" />
+                        <CompanyFields :form="form" :errors="errors" :validation="v$" />
 
                         <div class="flex justify-end gap-3">
                             <Link :href="route('companies.index')">

@@ -172,6 +172,43 @@ Minden felhasználó számára látható szöveg haladjon a közös fordítási 
 
 ---
 
+# VALIDÁCIÓS SZABÁLYOK
+
+A backend és a frontend validáció hosszú távon közös szabályforrásból épüljön fel.
+
+Kötelező elvek:
+
+- ne tarts fenn külön, kézzel szinkronizált backend és frontend validációs listákat ugyanahhoz az űrlaphoz
+- az üzleti űrlapok szabályai egy közös sémafájlban legyenek meghatározva
+- a backend Laravel szabályai ebből a közös sémából épüljenek fel
+- a frontend Vuelidate szabályai ugyanezen közös sémából épüljenek fel
+- frontend validációhoz a projektben az `@vuelidate/core` és `@vuelidate/validators` csomagokat kell használni
+
+Jelenlegi referencia minta:
+
+- közös séma: `resources/js/Validation/schemas/company.json`
+- backend séma betöltés: `app/Support/Validation/SharedValidationSchema.php`
+- backend Laravel rule adapter: `app/Support/Validation/SharedLaravelValidationRules.php`
+- frontend Vuelidate adapter: `resources/js/Support/validation/buildVuelidateRules.js`
+
+Szabályok új validáció vagy meglévő validáció módosítása esetén:
+
+- a tényleges szabályt először mindig a közös sémafájlban módosítsd
+- ne a Controllerben, ne a Vue oldalon, és ne különálló helperben vezesd be elsődleges forrásként
+- ha egy szabály csak backend oldalon értelmezhető teljesen, például `unique`, akkor is a közös sémában legyen deklarálva, és az adapterek kezeljék a saját oldalukon
+- ha a frontend nem tud egy backend szabályt 1:1-ben érvényesíteni, akkor is maradjon a backend az igazság forrása
+- a frontend validáció célja a gyors visszajelzés, nem a backend kiváltása
+
+Módosításkor kötelezően ellenőrizd:
+
+- a backend validáció továbbra is a közös sémából épül-e
+- a frontend validáció ugyanazt a közös sémát használja-e
+- a kapcsolódó Pest és Vitest tesztek követik-e az új szabályt
+
+Ne vezess be olyan megoldást, ahol ugyanazon mező szabályai több külön helyen vannak kézzel karbantartva.
+
+---
+
 # FRONTEND SZABÁLYOK
 
 A frontend stack:

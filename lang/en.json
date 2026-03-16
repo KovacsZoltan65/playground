@@ -146,4 +146,8 @@
     "Rows per page": "Rows per page",
     "Rows missing phone or email on this page": "Rows missing phone or email on this page",
     "Inactive": "Inactive"
+    ,"Validation required": "This field is required."
+    ,"Validation email": "Please enter a valid email address."
+    ,"Validation max characters": "Maximum :max characters allowed."
+    ,"Validation boolean": "Please choose a valid value."
 }

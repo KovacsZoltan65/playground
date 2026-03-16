@@ -3,9 +3,9 @@
 namespace App\Data;
 
 use App\Models\Company;
+use App\Support\Validation\SharedLaravelValidationRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 
@@ -62,14 +62,9 @@ class CompanyData extends Data
         /** @var Company|null $company */
         $company = request()->route('company');
 
-        return [
-            'id' => ['nullable', 'integer'],
-            'name' => ['required', 'string', 'max:255', Rule::unique('companies', 'name')->ignore($company?->id)],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('companies', 'email')->ignore($company?->id)],
-            'phone' => ['nullable', 'string', 'max:255'],
-            'address' => ['nullable', 'string', 'max:1000'],
-            'is_active' => ['required', 'boolean'],
-        ];
+        return SharedLaravelValidationRules::for('company', [
+            'company' => $company,
+        ]);
     }
 
     public function toRepositoryAttributes(): array

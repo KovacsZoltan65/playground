@@ -146,4 +146,8 @@
     "Rows per page": "Sorok oldalanként",
     "Rows missing phone or email on this page": "Telefon vagy e-mail nélküli sorok ezen az oldalon",
     "Inactive": "Inaktív"
+    ,"Validation required": "A mező kitöltése kötelező."
+    ,"Validation email": "Adj meg egy érvényes e-mail címet."
+    ,"Validation max characters": "Legfeljebb :max karakter adható meg."
+    ,"Validation boolean": "Adj meg érvényes értéket."
 }

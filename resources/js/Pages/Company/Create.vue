@@ -1,9 +1,13 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { buildVuelidateRules } from '@/Support/validation/buildVuelidateRules';
+import companyValidationSchema from '@/Validation/schemas/company.json';
 import CompanyFields from '@/Pages/Company/Partials/CompanyFields.vue';
 import companyService from '@/Services/CompanyService';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import { trans } from 'laravel-vue-i18n';
+import useVuelidate from '@vuelidate/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 
@@ -17,10 +21,25 @@ const form = reactive({
 
 const errors = reactive({});
 const processing = ref(false);
+const rules = computed(() =>
+    buildVuelidateRules(companyValidationSchema, {
+        translator: trans,
+    }),
+);
+const v$ = useVuelidate(rules, form, {
+    $autoDirty: true,
+});
 
 const submit = async () => {
     processing.value = true;
     Object.keys(errors).forEach((key) => delete errors[key]);
+
+    const isValid = await v$.value.$validate();
+
+    if (!isValid) {
+        processing.value = false;
+        return;
+    }
 
     try {
         await companyService.store(form);
@@ -56,7 +75,7 @@ const submit = async () => {
                 </div>
 
                 <form class="space-y-8" @submit.prevent="submit">
-                    <CompanyFields :form="form" :errors="errors" />
+                    <CompanyFields :form="form" :errors="errors" :validation="v$" />
 
                     <div class="flex justify-end gap-3">
                         <Link :href="route('companies.index')">

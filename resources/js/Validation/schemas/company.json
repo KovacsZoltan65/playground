@@ -1,0 +1,43 @@
+{
+    "fields": {
+        "id": {
+            "nullable": true,
+            "types": ["integer"]
+        },
+        "name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255,
+            "unique": {
+                "table": "companies",
+                "column": "name",
+                "ignoreContextKey": "company"
+            }
+        },
+        "email": {
+            "required": true,
+            "types": ["string"],
+            "format": "email",
+            "max": 255,
+            "unique": {
+                "table": "companies",
+                "column": "email",
+                "ignoreContextKey": "company"
+            }
+        },
+        "phone": {
+            "nullable": true,
+            "types": ["string"],
+            "max": 255
+        },
+        "address": {
+            "nullable": true,
+            "types": ["string"],
+            "max": 1000
+        },
+        "is_active": {
+            "required": true,
+            "types": ["boolean"]
+        }
+    }
+}
