@@ -4,6 +4,7 @@ import { computed, ref } from 'vue';
 import { currentLocale, trans } from 'laravel-vue-i18n';
 import { Link, usePage } from '@inertiajs/vue3';
 import Avatar from 'primevue/avatar';
+import Toast from 'primevue/toast';
 
 const page = usePage();
 const sidebarOpen = ref(false);
@@ -32,6 +33,13 @@ const navigationItems = computed(() => {
             route: 'companies.index',
             activeRoute: 'companies.*',
             permission: 'companies.viewAny',
+        },
+        {
+            label: trans('Employees'),
+            icon: 'pi pi-users',
+            route: 'employees.index',
+            activeRoute: 'employees.*',
+            permission: 'employees.viewAny',
         },
         {
             label: trans('Usage tips'),
@@ -120,6 +128,7 @@ const isActive = (name) => route().current(name);
 
         <div class="min-w-0 flex-1 overflow-hidden lg:h-screen">
             <div class="flex h-full min-h-0 flex-col overflow-y-auto">
+            <Toast position="top-right" />
             <header
                 class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10"
             >

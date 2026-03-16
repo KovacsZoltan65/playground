@@ -18,4 +18,6 @@ interface CompanyRepositoryInterface
     public function delete(Company $company): bool;
 
     public function bulkDeleteByIds(array $ids): int;
+
+    public function optionsForSelect(): array;
 }

@@ -3,12 +3,14 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import companyService from "@/Services/CompanyService";
+import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import Column from "primevue/column";
+import ConfirmDialog from "primevue/confirmdialog";
 import DataTable from "primevue/datatable";
 import IconField from "primevue/iconfield";
 import InputIcon from "primevue/inputicon";
@@ -16,17 +18,13 @@ import InputText from "primevue/inputtext";
 import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Tag from "primevue/tag";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 // A látható oszlopok böngészőoldali mentésének kulcsa ehhez a táblához.
 const COLUMN_VISIBILITY_STORAGE_KEY = "company-index-visible-columns";
 // Alapértelmezett üzleti oszlopok, amelyek első betöltéskor látszanak.
-const DEFAULT_VISIBLE_COLUMN_KEYS = [
-    "name",
-    "email",
-    "phone",
-    "is_active",
-    "updated_at",
-];
+const DEFAULT_VISIBLE_COLUMN_KEYS = ["name", "email", "phone", "is_active", "updated_at"];
 const MINIMUM_VISIBLE_COLUMN_KEY = "name";
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -39,6 +37,8 @@ const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
 let isProgrammaticSearchUpdate = false;
+const confirm = useConfirm();
+const toast = useToast();
 
 // A PrimeVue DataTable szűrőmodellje.
 const tableFilters = ref({
@@ -187,9 +187,7 @@ const activeFilters = computed(() => {
         filters.push({
             key: "is_active",
             label: `${trans("Status")}: ${
-                tableFilters.value.is_active.value
-                    ? trans("Active")
-                    : trans("Inactive")
+                tableFilters.value.is_active.value ? trans("Active") : trans("Inactive")
             }`,
         });
     }
@@ -219,6 +217,24 @@ const fetchCompanies = async () => {
     }
 };
 
+const showSuccessToast = (detail) => {
+    toast.add({
+        severity: "success",
+        summary: trans("Success"),
+        detail,
+        life: 3000,
+    });
+};
+
+const showErrorToast = (detail = trans("Action failed.")) => {
+    toast.add({
+        severity: "error",
+        summary: trans("Error"),
+        detail,
+        life: 4000,
+    });
+};
+
 // Lapozó esemény kezelése.
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
@@ -235,17 +251,31 @@ const onFilter = async (event) => {
 
 // Egyetlen cég törlése megerősítés után.
 const removeCompany = async (company) => {
-    if (!window.confirm(trans("Delete :name?", { name: company.name }))) {
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Delete :name?", { name: company.name }),
+        header: trans("Delete"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: trans("Delete"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+    });
+
+    if (!accepted) {
         return;
     }
 
-    await companyService.destroy(company.id);
+    try {
+        await companyService.destroy(company.id);
 
-    if (companies.value.length === 1 && tableState.page > 1) {
-        tableState.page -= 1;
+        if (companies.value.length === 1 && tableState.page > 1) {
+            tableState.page -= 1;
+        }
+
+        await fetchCompanies();
+        showSuccessToast(trans("Company deleted successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
     }
-
-    await fetchCompanies();
 };
 
 // Több kijelölt cég törlése egyszerre.
@@ -254,32 +284,124 @@ const removeSelectedCompanies = async () => {
         return;
     }
 
-    if (
-        !window.confirm(
-            trans("Delete :count selected companies?", {
-                count: selectedCompanies.value.length,
-            })
-        )
-    ) {
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Delete :count selected companies?", {
+            count: selectedCompanies.value.length,
+        }),
+        header: trans("Delete selected"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: trans("Delete"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+    });
+
+    if (!accepted) {
         return;
     }
 
-    await companyService.bulkDestroy(
-        selectedCompanies.value.map((company) => company.id)
-    );
-    selectedCompanies.value = [];
+    try {
+        await companyService.bulkDestroy(
+            selectedCompanies.value.map((company) => company.id)
+        );
+        selectedCompanies.value = [];
 
-    if (companies.value.length === 1 && tableState.page > 1) {
-        tableState.page -= 1;
+        if (companies.value.length === 1 && tableState.page > 1) {
+            tableState.page -= 1;
+        }
+
+        await fetchCompanies();
+        showSuccessToast(trans("Companies deleted successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+// Több kijelölt cég aktiválása egyszerre.
+const activateSelectedCompanies = async () => {
+    if (selectedCompanies.value.length === 0) {
+        return;
     }
 
-    await fetchCompanies();
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Activate :count selected companies?", {
+            count: selectedCompanies.value.length,
+        }),
+        header: trans("Activate selected"),
+        icon: "pi pi-check-circle",
+        acceptLabel: trans("Activate"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-success",
+    });
+
+    if (!accepted) {
+        return;
+    }
+
+    try {
+        await companyService.bulkActivate(
+            selectedCompanies.value.map((company) => company.id)
+        );
+        selectedCompanies.value = [];
+
+        await fetchCompanies();
+        showSuccessToast(trans("Companies activated successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+// Több kijelölt cég deaktiválása egyszerre.
+const deactivateSelectedCompanies = async () => {
+    if (selectedCompanies.value.length === 0) {
+        return;
+    }
+
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Deactivate :count selected companies?", {
+            count: selectedCompanies.value.length,
+        }),
+        header: trans("Deactivate selected"),
+        icon: "pi pi-ban",
+        acceptLabel: trans("Deactivate"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+    });
+
+    if (!accepted) {
+        return;
+    }
+
+    try {
+        await companyService.bulkDeactivate(
+            selectedCompanies.value.map((company) => company.id)
+        );
+        selectedCompanies.value = [];
+
+        await fetchCompanies();
+        showSuccessToast(trans("Companies deactivated successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
 };
 
 // Aktív státusz váltása a soron, majd a lista frissítése.
 const toggleCompanyActiveStatus = async (company) => {
-    await companyService.toggleActiveStatus(company.id);
-    await fetchCompanies();
+    try {
+        await companyService.toggleActiveStatus(company.id);
+        await fetchCompanies();
+        showSuccessToast(trans("Company status updated successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+const refreshCompanies = async () => {
+    try {
+        await fetchCompanies();
+        showSuccessToast(trans("Companies refreshed."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
 };
 
 // A soronkénti műveleti menü elemei.
@@ -476,6 +598,7 @@ onBeforeUnmount(() => {
 
     <!-- Az oldal a hitelesített felhasználói layouton belül jelenik meg. -->
     <AuthenticatedLayout>
+        <ConfirmDialog />
         <!-- A layout fejléc slotjába kerülő oldalnév. -->
         <template #header>{{ $t("Companies") }}</template>
 
@@ -530,19 +653,25 @@ onBeforeUnmount(() => {
                             </p>
                         </div>
 
-                        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-end">
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-end"
+                        >
                             <div
                                 class="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200/80 bg-slate-50 px-4 py-3 sm:max-w-[26rem]"
                             >
                                 <div class="flex items-center justify-between gap-3">
-                                    <div class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                                    <div
+                                        class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500"
+                                    >
                                         {{ $t("View options") }}
                                     </div>
                                     <div class="text-xs font-medium text-slate-500">
                                         {{ visibleColumnsSummary }}
                                     </div>
                                 </div>
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <div
+                                    class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                >
                                     <MultiSelect
                                         v-model="visibleColumnKeys"
                                         :options="availableColumns"
@@ -563,9 +692,26 @@ onBeforeUnmount(() => {
                                     />
                                 </div>
                             </div>
-                            <Link :href="route('companies.create')">
-                                <Button :label="$t('New company')" icon="pi pi-plus" />
-                            </Link>
+                            <!--  -->
+                            <div class="flex flex-col gap-2">
+                                <Link :href="route('companies.create')">
+                                    <Button
+                                        :label="$t('New company')"
+                                        icon="pi pi-plus"
+                                    />
+                                </Link>
+                                <!-- REFRESH -->
+                                <Button
+                                    :label="$t('Refresh')"
+                                    icon="pi pi-refresh"
+                                    severity="secondary"
+                                    size="small"
+                                    :disabled="loading"
+                                    :loading="loading"
+                                    @click="refreshCompanies"
+                                    data-testid="companies-refresh"
+                                />
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -589,13 +735,26 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
 
-                        <div class="flex gap-3">
+                        <div class="flex flex-wrap gap-3">
                             <Button
                                 :label="$t('Clear selection')"
                                 icon="pi pi-times"
                                 severity="secondary"
                                 outlined
                                 @click="selectedCompanies = []"
+                            />
+                            <Button
+                                :label="$t('Activate selected')"
+                                icon="pi pi-check"
+                                severity="success"
+                                @click="activateSelectedCompanies"
+                            />
+                            <Button
+                                :label="$t('Deactivate selected')"
+                                icon="pi pi-ban"
+                                severity="danger"
+                                outlined
+                                @click="deactivateSelectedCompanies"
                             />
                             <Button
                                 :label="$t('Delete selected')"
@@ -679,10 +838,16 @@ onBeforeUnmount(() => {
                         <template #empty>
                             <div class="py-10 text-center">
                                 <div class="text-lg font-medium text-slate-700">
-                                    {{ $t("No companies found for the current filters.") }}
+                                    {{
+                                        $t("No companies found for the current filters.")
+                                    }}
                                 </div>
                                 <div class="mt-2 text-sm text-slate-500">
-                                    {{ $t("Try clearing filters or broadening your search.") }}
+                                    {{
+                                        $t(
+                                            "Try clearing filters or broadening your search."
+                                        )
+                                    }}
                                 </div>
                                 <Button
                                     class="mt-4"
@@ -730,7 +895,9 @@ onBeforeUnmount(() => {
                                             class="inline-flex items-center gap-2 transition hover:text-emerald-700"
                                         >
                                             {{ data.name }}
-                                            <i class="pi pi-arrow-up-right text-xs text-emerald-600" />
+                                            <i
+                                                class="pi pi-arrow-up-right text-xs text-emerald-600"
+                                            />
                                         </Link>
                                     </div>
                                     <div class="mt-1 text-sm text-slate-500">

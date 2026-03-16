@@ -1,0 +1,31 @@
+{
+    "fields": {
+        "id": {
+            "nullable": true,
+            "types": ["integer"]
+        },
+        "company_id": {
+            "required": true,
+            "types": ["integer"],
+            "exists": {
+                "table": "companies",
+                "column": "id"
+            }
+        },
+        "name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255
+        },
+        "email": {
+            "required": true,
+            "types": ["string"],
+            "format": "email",
+            "max": 255
+        },
+        "active": {
+            "required": true,
+            "types": ["boolean"]
+        }
+    }
+}

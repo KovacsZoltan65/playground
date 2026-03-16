@@ -1,9 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, getCurrentInstance, ref } from 'vue';
 import Button from 'primevue/button';
 import Menu from 'primevue/menu';
-
-let rowActionMenuInstanceCount = 0;
 
 const props = defineProps({
     items: {
@@ -17,7 +15,8 @@ const props = defineProps({
 });
 
 const menuRef = ref(null);
-const menuId = `row-action-menu-${++rowActionMenuInstanceCount}`;
+const instance = getCurrentInstance();
+const menuId = `row-action-menu-${instance?.uid ?? Math.random().toString(36).slice(2)}`;
 
 const normalizedItems = computed(() => props.items.filter((item) => item && item.visible !== false));
 

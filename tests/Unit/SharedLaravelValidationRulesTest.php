@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Company;
+use App\Models\Employee;
 use App\Support\Validation\SharedLaravelValidationRules;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
@@ -46,6 +47,22 @@ it('ignores the current company when unique rules are built from the shared sche
         'phone' => '123',
         'address' => 'Updated address',
         'is_active' => false,
+    ], $rules);
+
+    expect($validator->fails())->toBeFalse();
+});
+
+it('builds employee validation rules from the shared schema', function () {
+    $company = Company::factory()->create();
+
+    $rules = SharedLaravelValidationRules::for('employee');
+
+    $validator = Validator::make([
+        'id' => null,
+        'company_id' => $company->id,
+        'name' => 'Jane Doe',
+        'email' => 'jane@example.com',
+        'active' => true,
     ], $rules);
 
     expect($validator->fails())->toBeFalse();

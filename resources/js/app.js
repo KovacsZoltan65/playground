@@ -7,6 +7,8 @@ import { i18nVue } from 'laravel-vue-i18n';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import PrimeVue from 'primevue/config';
+import ConfirmationService from 'primevue/confirmationservice';
+import ToastService from 'primevue/toastservice';
 import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css';
 
@@ -97,6 +99,8 @@ createInertiaApp({
                     preset: Aura,
                 },
             })
+            .use(ConfirmationService)
+            .use(ToastService)
             .use(ZiggyVue)
             .mount(el);
     },

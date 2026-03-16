@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\User;
 use App\Support\Permissions\Roles;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -30,7 +31,9 @@ class DatabaseSeeder extends Seeder
 
             $user->assignRole(Roles::ADMIN);
 
-            Company::factory()->count(12)->create();
+            $companies = Company::factory()->count(12)->create();
+
+            Employee::factory()->count(24)->recycle($companies)->create();
         });
     }
 }

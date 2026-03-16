@@ -68,4 +68,17 @@ class CompanyRepository implements CompanyRepositoryInterface
             ->whereIn('id', $ids)
             ->delete();
     }
+
+    public function optionsForSelect(): array
+    {
+        return Company::query()
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (Company $company) => [
+                'value' => $company->id,
+                'label' => $company->name,
+            ])
+            ->values()
+            ->all();
+    }
 }

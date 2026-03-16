@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Support\Permissions\CompanyPermissions;
+use App\Support\Permissions\EmployeePermissions;
 use App\Support\Permissions\Roles;
 use App\Support\Permissions\SidebarTipPagePermissions;
 use Illuminate\Database\Seeder;
@@ -21,6 +22,7 @@ class RoleSeeder extends Seeder
 
             $adminRole->syncPermissions([
                 ...CompanyPermissions::all(),
+                ...EmployeePermissions::all(),
                 ...SidebarTipPagePermissions::all(),
             ]);
 
@@ -31,6 +33,12 @@ class RoleSeeder extends Seeder
                 CompanyPermissions::UPDATE,
                 CompanyPermissions::DELETE,
                 CompanyPermissions::DELETE_ANY,
+                EmployeePermissions::VIEW_ANY,
+                EmployeePermissions::VIEW,
+                EmployeePermissions::CREATE,
+                EmployeePermissions::UPDATE,
+                EmployeePermissions::DELETE,
+                EmployeePermissions::DELETE_ANY,
                 SidebarTipPagePermissions::VIEW_ANY,
                 SidebarTipPagePermissions::VIEW,
                 SidebarTipPagePermissions::CREATE,
@@ -43,6 +51,10 @@ class RoleSeeder extends Seeder
                 CompanyPermissions::VIEW,
                 CompanyPermissions::CREATE,
                 CompanyPermissions::UPDATE,
+                EmployeePermissions::VIEW_ANY,
+                EmployeePermissions::VIEW,
+                EmployeePermissions::CREATE,
+                EmployeePermissions::UPDATE,
                 SidebarTipPagePermissions::VIEW_ANY,
                 SidebarTipPagePermissions::VIEW,
             ]);
@@ -50,6 +62,8 @@ class RoleSeeder extends Seeder
             $userRole->syncPermissions([
                 CompanyPermissions::VIEW_ANY,
                 CompanyPermissions::VIEW,
+                EmployeePermissions::VIEW_ANY,
+                EmployeePermissions::VIEW,
             ]);
         });
     }

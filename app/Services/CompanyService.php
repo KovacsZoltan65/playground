@@ -66,4 +66,9 @@ class CompanyService
     {
         return $this->companies->bulkDeleteByIds($ids);
     }
+
+    public function optionsForSelect(): array
+    {
+        return $this->companies->optionsForSelect();
+    }
 }

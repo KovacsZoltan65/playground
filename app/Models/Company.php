@@ -6,6 +6,7 @@ use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -34,15 +35,20 @@ class Company extends Model
         return $query->where('active', APP_ACTIVE);
     }
 
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class);
+    }
+
     /*
      * ========================= LOGOLÁS =========================
      */
 
-    protected static string $logName = 'companies';
+    protected string $logName = 'companies';
 
     public static function getTag(): string
     {
-        return static::$logName;
+        return 'companies';
     }
 
     public function getActivitylogOptions(): LogOptions

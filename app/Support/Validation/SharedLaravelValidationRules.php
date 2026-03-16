@@ -62,6 +62,10 @@ final class SharedLaravelValidationRules
             $rules[] = self::buildUniqueRule($config['unique'], $context);
         }
 
+        if (isset($config['exists']) && is_array($config['exists'])) {
+            $rules[] = 'exists:'.$config['exists']['table'].','.$config['exists']['column'];
+        }
+
         return $rules;
     }
 

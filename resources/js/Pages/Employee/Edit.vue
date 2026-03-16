@@ -1,0 +1,132 @@
+<script setup>
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
+import employeeValidationSchema from "@/Validation/schemas/employee.json";
+import EmployeeFields from "@/Pages/Employee/Partials/EmployeeFields.vue";
+import employeeService from "@/Services/EmployeeService";
+import { Head, Link, router } from "@inertiajs/vue3";
+import useVuelidate from "@vuelidate/core";
+import { trans } from "laravel-vue-i18n";
+import { computed, onMounted, reactive, ref } from "vue";
+import Button from "primevue/button";
+import Card from "primevue/card";
+import ProgressSpinner from "primevue/progressspinner";
+
+const props = defineProps({
+    employeeId: {
+        type: Number,
+        required: true,
+    },
+    companyOptions: {
+        type: Array,
+        default: () => [],
+    },
+});
+
+const loading = ref(true);
+const processing = ref(false);
+const form = reactive({
+    company_id: null,
+    name: "",
+    email: "",
+    active: true,
+});
+const errors = reactive({});
+const rules = computed(() =>
+    buildVuelidateRules(employeeValidationSchema, {
+        translator: trans,
+    })
+);
+const v$ = useVuelidate(rules, form, {
+    $autoDirty: true,
+});
+
+const loadEmployee = async () => {
+    loading.value = true;
+
+    try {
+        const response = await employeeService.show(props.employeeId);
+        Object.assign(form, response.data);
+        v$.value.$reset();
+    } finally {
+        loading.value = false;
+    }
+};
+
+const submit = async () => {
+    processing.value = true;
+    Object.keys(errors).forEach((key) => delete errors[key]);
+
+    const isValid = await v$.value.$validate();
+
+    if (!isValid) {
+        processing.value = false;
+        return;
+    }
+
+    try {
+        await employeeService.update(props.employeeId, form);
+        router.get(route("employees.index"));
+    } catch (error) {
+        if (error.response?.status === 422) {
+            Object.assign(errors, error.response.data.errors);
+        }
+    } finally {
+        processing.value = false;
+    }
+};
+
+onMounted(loadEmployee);
+</script>
+
+<template>
+    <Head :title="$t('Edit Employee')" />
+
+    <AuthenticatedLayout>
+        <template #header>{{ $t("Edit Employee") }}</template>
+
+        <Card class="app-card border-0">
+            <template #content>
+                <div v-if="loading" class="flex justify-center py-16">
+                    <ProgressSpinner stroke-width="4" />
+                </div>
+
+                <template v-else>
+                    <div class="mb-8 flex items-start justify-between gap-4">
+                        <div>
+                            <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">
+                                {{ $t("Edit") }}
+                            </div>
+                            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                                {{ $t("Update employee") }}
+                            </h1>
+                            <p class="mt-2 text-slate-500">
+                                {{ $t("Edit the selected employee record and save your changes.") }}
+                            </p>
+                        </div>
+
+                        <Link :href="route('employees.index')">
+                            <Button :label="$t('Back')" icon="pi pi-arrow-left" severity="secondary" outlined />
+                        </Link>
+                    </div>
+
+                    <form class="space-y-8" @submit.prevent="submit">
+                        <EmployeeFields
+                            :form="form"
+                            :errors="errors"
+                            :validation="v$"
+                            :company-options="companyOptions"
+                        />
+
+                        <div class="flex justify-end gap-3">
+                            <Link :href="route('employees.index')">
+                                <Button type="button" :label="$t('Cancel')" severity="secondary" outlined />
+                            </Link>
+                            <Button type="submit" :label="$t('Save changes')" icon="pi pi-save" :loading="processing" />
+                        </div>
+                    </form>
+                </template>
+            </template>
+        </Card>
+    </AuthenticatedLayout>
+</template>

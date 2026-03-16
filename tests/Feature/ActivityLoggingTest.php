@@ -33,11 +33,13 @@ it('logs company create activity through spatie activitylog', function () {
         'is_active' => true,
     ])->assertCreated();
 
-    expect(Activity::query()
-        ->where('log_name', 'company')
-        ->where('event', 'created')
+    $activity = Activity::query()
         ->where('subject_type', Company::class)
-        ->exists())->toBeTrue();
+        ->latest()
+        ->first();
+
+    expect($activity)->not->toBeNull()
+        ->and($activity?->log_name)->toBe('companies');
 });
 
 it('logs reported exceptions', function () {

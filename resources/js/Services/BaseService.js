@@ -51,6 +51,9 @@ class BaseService {
     post(url, data, config = {}) {
         return this.apiClient.post(url, data, config);
     }
+    patch(url, data, config = {}) {
+        return this.apiClient.patch(url, data, config);
+    }
     put(url, data, config = {}) {
         return this.apiClient.put(url, data, config);
     }
