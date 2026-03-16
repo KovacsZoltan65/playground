@@ -3,6 +3,7 @@
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\FrontendErrorController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SidebarTipPageController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,6 +35,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/companies', [CompanyController::class, 'bulkDestroy'])->name('companies.bulk-destroy');
     Route::put('/companies/{company}', [CompanyController::class, 'update'])->name('companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('companies.destroy');
+
+    Route::get('/usage-tips', [SidebarTipPageController::class, 'index'])->name('usage-tips.index');
+    Route::get('/usage-tips/create', [SidebarTipPageController::class, 'create'])->name('usage-tips.create');
+    Route::get('/usage-tips/list', [SidebarTipPageController::class, 'list'])->name('usage-tips.list');
+    Route::get('/usage-tips/{sidebarTipPage}/edit', [SidebarTipPageController::class, 'edit'])->name('usage-tips.edit');
+    Route::get('/usage-tips/{sidebarTipPage}', [SidebarTipPageController::class, 'show'])->name('usage-tips.show');
+    Route::post('/usage-tips', [SidebarTipPageController::class, 'store'])->name('usage-tips.store');
+    Route::put('/usage-tips/{sidebarTipPage}', [SidebarTipPageController::class, 'update'])->name('usage-tips.update');
+    Route::delete('/usage-tips/{sidebarTipPage}', [SidebarTipPageController::class, 'destroy'])->name('usage-tips.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

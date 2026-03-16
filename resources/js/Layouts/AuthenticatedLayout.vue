@@ -1,4 +1,5 @@
 <script setup>
+import SidebarUsageTips from '@/Components/SidebarUsageTips.vue';
 import { computed, ref } from 'vue';
 import { currentLocale, trans } from 'laravel-vue-i18n';
 import { Link, usePage } from '@inertiajs/vue3';
@@ -8,6 +9,12 @@ const page = usePage();
 const sidebarOpen = ref(false);
 
 const user = computed(() => page.props.auth.user);
+const userPermissions = computed(() => page.props.auth.permissions ?? []);
+const sidebarTipConfig = computed(() => page.props.sidebar_tips ?? {
+    visible: false,
+    rotationIntervalMs: 60 * 1000,
+    tips: [],
+});
 
 const navigationItems = computed(() => {
     currentLocale.value;
@@ -17,18 +24,29 @@ const navigationItems = computed(() => {
             label: trans('Dashboard'),
             icon: 'pi pi-home',
             route: 'dashboard',
+            activeRoute: 'dashboard',
         },
         {
             label: trans('Companies'),
             icon: 'pi pi-building',
             route: 'companies.index',
+            activeRoute: 'companies.*',
+            permission: 'companies.viewAny',
+        },
+        {
+            label: trans('Usage tips'),
+            icon: 'pi pi-lightbulb',
+            route: 'usage-tips.index',
+            activeRoute: 'usage-tips.*',
+            permission: 'sidebarTipPages.viewAny',
         },
         {
             label: trans('Profile'),
             icon: 'pi pi-user',
             route: 'profile.edit',
+            activeRoute: 'profile.*',
         },
-    ];
+    ].filter((item) => !item.permission || userPermissions.value.includes(item.permission));
 });
 
 const isActive = (name) => route().current(name);
@@ -82,7 +100,7 @@ const isActive = (name) => route().current(name);
                     :href="route(item.route)"
                     :class="[
                         'app-sidebar-link',
-                        isActive(item.route) ? 'app-sidebar-link-active' : '',
+                        isActive(item.activeRoute) ? 'app-sidebar-link-active' : '',
                     ]"
                     @click="sidebarOpen = false"
                 >
@@ -91,14 +109,7 @@ const isActive = (name) => route().current(name);
                 </Link>
             </nav>
 
-            <div
-                class="mt-auto rounded-[2rem] bg-gradient-to-br from-emerald-500/20 to-sky-400/20 p-5 ring-1 ring-white/10"
-            >
-                <div class="mb-3 text-sm font-semibold">{{ $t('Deployment tip') }}</div>
-                <p class="text-sm leading-6 text-slate-300">
-                    {{ $t('The project webroot should point to the public directory when using Wamp.') }}
-                </p>
-            </div>
+            <SidebarUsageTips :config="sidebarTipConfig" />
         </aside>
 
         <div

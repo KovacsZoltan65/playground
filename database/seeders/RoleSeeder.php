@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Support\Permissions\CompanyPermissions;
 use App\Support\Permissions\Roles;
+use App\Support\Permissions\SidebarTipPagePermissions;
 use Illuminate\Database\Seeder;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Role;
@@ -18,7 +19,10 @@ class RoleSeeder extends Seeder
             $hrRole = Role::findOrCreate(Roles::HR, 'web');
             $userRole = Role::findOrCreate(Roles::USER, 'web');
 
-            $adminRole->syncPermissions(CompanyPermissions::all());
+            $adminRole->syncPermissions([
+                ...CompanyPermissions::all(),
+                ...SidebarTipPagePermissions::all(),
+            ]);
 
             $managerRole->syncPermissions([
                 CompanyPermissions::VIEW_ANY,
@@ -27,6 +31,11 @@ class RoleSeeder extends Seeder
                 CompanyPermissions::UPDATE,
                 CompanyPermissions::DELETE,
                 CompanyPermissions::DELETE_ANY,
+                SidebarTipPagePermissions::VIEW_ANY,
+                SidebarTipPagePermissions::VIEW,
+                SidebarTipPagePermissions::CREATE,
+                SidebarTipPagePermissions::UPDATE,
+                SidebarTipPagePermissions::DELETE,
             ]);
 
             $hrRole->syncPermissions([
@@ -34,6 +43,8 @@ class RoleSeeder extends Seeder
                 CompanyPermissions::VIEW,
                 CompanyPermissions::CREATE,
                 CompanyPermissions::UPDATE,
+                SidebarTipPagePermissions::VIEW_ANY,
+                SidebarTipPagePermissions::VIEW,
             ]);
 
             $userRole->syncPermissions([

@@ -3,9 +3,14 @@
 namespace App\Providers;
 
 use App\Models\Company;
+use App\Models\SidebarTipPage;
 use App\Policies\CompanyPolicy;
+use App\Policies\SidebarTipPagePolicy;
 use App\Repositories\CompanyRepository;
+use App\Repositories\SidebarTipPageRepository;
 use App\Repositories\Contracts\CompanyRepositoryInterface;
+use App\Repositories\Contracts\SidebarTipPageRepositoryInterface;
+use App\Services\SidebarTipPageService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
@@ -22,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(CompanyRepositoryInterface::class, CompanyRepository::class);
+        $this->app->bind(SidebarTipPageRepositoryInterface::class, SidebarTipPageRepository::class);
     }
 
     /**
@@ -49,6 +55,13 @@ class AppServiceProvider extends ServiceProvider
                 'timezone' => Session::has('timezone') ? Session::get('timezone') : config('app.timezone', 'UTC'),
                 'theme' => Session::has('theme') ? Session::get('theme') : 'system',
             ],
+            'sidebar_tips' => fn () => request()->user()
+                ? app(SidebarTipPageService::class)->resolveForRoute(request()->route()?->getName())
+                : [
+                    'visible' => false,
+                    'rotationIntervalMs' => 60 * 1000,
+                    'tips' => [],
+                ],
         ]);
 
         Inertia::share('flash', function () {
@@ -127,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::policy(Company::class, CompanyPolicy::class);
+        Gate::policy(SidebarTipPage::class, SidebarTipPagePolicy::class);
 
         Vite::prefetch(concurrency: 3);
     }

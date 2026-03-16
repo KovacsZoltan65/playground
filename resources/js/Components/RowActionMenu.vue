@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue';
-import Button from 'primevue/button';
-import Menu from 'primevue/menu';
+import { ref } from "vue";
+import Button from "primevue/button";
+import Menu from "primevue/menu";
 
 defineProps({
     items: {
@@ -12,12 +12,12 @@ defineProps({
 
 const menu = ref(null);
 const menuPt = {
-    root: { class: 'app-row-action-menu' },
-    item: { class: 'app-row-action-menu-item' },
-    itemContent: { class: 'app-row-action-menu-item-content' },
-    itemLink: { class: 'app-row-action-menu-item-link' },
-    itemIcon: { class: 'app-row-action-menu-item-icon' },
-    itemLabel: { class: 'app-row-action-menu-item-label' },
+    root: { class: "app-row-action-menu" },
+    item: { class: "app-row-action-menu-item" },
+    itemContent: { class: "app-row-action-menu-item-content" },
+    itemLink: { class: "app-row-action-menu-item-link" },
+    itemIcon: { class: "app-row-action-menu-item-icon" },
+    itemLabel: { class: "app-row-action-menu-item-label" },
 };
 
 const toggle = (event) => {
@@ -36,12 +36,6 @@ const toggle = (event) => {
             aria-controls="row-action-menu"
             @click="toggle"
         />
-        <Menu
-            id="row-action-menu"
-            ref="menu"
-            :model="items"
-            :pt="menuPt"
-            popup
-        />
+        <Menu id="row-action-menu" ref="menu" :model="items" :pt="menuPt" popup />
     </div>
 </template>

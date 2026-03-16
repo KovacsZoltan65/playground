@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 PermissionSeeder::class,
                 RoleSeeder::class,
+                SidebarTipSeeder::class,
             ]);
 
             $user = User::factory()->create([

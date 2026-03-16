@@ -1,41 +1,48 @@
-import axios from 'axios';
+import BaseService from "@/Services/BaseService.js";
 
-export default {
+class CompanyService extends BaseService {
+    constructor() {
+        super();
+        this.url = "/companies";
+    }
+
     async list(params = {}) {
-        const response = await axios.get('/companies/list', { params });
+        const response = await this.get(`${this.url}/list`, { params });
 
         return response.data;
-    },
+    }
 
     async show(companyId) {
-        const response = await axios.get(`/companies/${companyId}`);
+        const response = await this.get(`${this.url}/${companyId}`);
 
         return response.data;
-    },
+    }
 
     async store(payload) {
-        const response = await axios.post('/companies', payload);
+        const response = await this.post(`${this.url}`, payload);
 
         return response.data;
-    },
+    }
 
     async update(companyId, payload) {
-        const response = await axios.put(`/companies/${companyId}`, payload);
+        const response = await this.put(`${this.url}/${companyId}`, payload);
 
         return response.data;
-    },
+    }
 
     async destroy(companyId) {
-        const response = await axios.delete(`/companies/${companyId}`);
+        const response = await this.delete(`${this.url}/${companyId}`);
 
         return response.data;
-    },
+    }
 
     async bulkDestroy(ids) {
-        const response = await axios.delete('/companies', {
+        const response = await this.delete(`${this.url}`, {
             data: { ids },
         });
 
         return response.data;
-    },
-};
+    }
+}
+
+export default new CompanyService();
