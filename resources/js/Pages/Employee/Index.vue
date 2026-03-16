@@ -2,12 +2,14 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import employeeService from "@/Services/EmployeeService";
+import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import Column from "primevue/column";
+import ConfirmDialog from "primevue/confirmdialog";
 import DataTable from "primevue/datatable";
 import IconField from "primevue/iconfield";
 import InputIcon from "primevue/inputicon";
@@ -15,6 +17,8 @@ import InputText from "primevue/inputtext";
 import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
 import Tag from "primevue/tag";
+import { useConfirm } from "primevue/useconfirm";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     companyOptions: {
@@ -41,6 +45,8 @@ const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
 let isProgrammaticSearchUpdate = false;
+const confirm = useConfirm();
+const toast = useToast();
 
 const tableFilters = ref({
     global: { value: null, matchMode: "contains" },
@@ -201,6 +207,24 @@ const fetchEmployees = async () => {
     }
 };
 
+const showSuccessToast = (detail) => {
+    toast.add({
+        severity: "success",
+        summary: trans("Success"),
+        detail,
+        life: 3000,
+    });
+};
+
+const showErrorToast = (detail = trans("Action failed.")) => {
+    toast.add({
+        severity: "error",
+        summary: trans("Error"),
+        detail,
+        life: 4000,
+    });
+};
+
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
     tableState.perPage = event.rows;
@@ -221,17 +245,31 @@ const onSort = async (event) => {
 };
 
 const removeEmployee = async (employee) => {
-    if (!window.confirm(trans("Delete :name?", { name: employee.name }))) {
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Delete :name?", { name: employee.name }),
+        header: trans("Delete"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: trans("Delete"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+    });
+
+    if (!accepted) {
         return;
     }
 
-    await employeeService.destroy(employee.id);
+    try {
+        await employeeService.destroy(employee.id);
 
-    if (employees.value.length === 1 && tableState.page > 1) {
-        tableState.page -= 1;
+        if (employees.value.length === 1 && tableState.page > 1) {
+            tableState.page -= 1;
+        }
+
+        await fetchEmployees();
+        showSuccessToast(trans("Employee deleted successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
     }
-
-    await fetchEmployees();
 };
 
 const removeSelectedEmployees = async () => {
@@ -239,29 +277,119 @@ const removeSelectedEmployees = async () => {
         return;
     }
 
-    if (
-        !window.confirm(
-            trans("Delete :count selected employees?", {
-                count: selectedEmployees.value.length,
-            })
-        )
-    ) {
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Delete :count selected employees?", {
+            count: selectedEmployees.value.length,
+        }),
+        header: trans("Delete selected"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: trans("Delete"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+    });
+
+    if (!accepted) {
         return;
     }
 
-    await employeeService.bulkDestroy(selectedEmployees.value.map((employee) => employee.id));
-    selectedEmployees.value = [];
+    try {
+        await employeeService.bulkDestroy(
+            selectedEmployees.value.map((employee) => employee.id)
+        );
+        selectedEmployees.value = [];
 
-    if (employees.value.length === 1 && tableState.page > 1) {
-        tableState.page -= 1;
+        if (employees.value.length === 1 && tableState.page > 1) {
+            tableState.page -= 1;
+        }
+
+        await fetchEmployees();
+        showSuccessToast(trans("Employees deleted successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+const activateSelectedEmployees = async () => {
+    if (selectedEmployees.value.length === 0) {
+        return;
     }
 
-    await fetchEmployees();
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Activate :count selected employees?", {
+            count: selectedEmployees.value.length,
+        }),
+        header: trans("Activate selected"),
+        icon: "pi pi-check-circle",
+        acceptLabel: trans("Activate"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-success",
+    });
+
+    if (!accepted) {
+        return;
+    }
+
+    try {
+        await employeeService.bulkActivate(
+            selectedEmployees.value.map((employee) => employee.id)
+        );
+        selectedEmployees.value = [];
+        await fetchEmployees();
+        showSuccessToast(trans("Employees activated successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+const deactivateSelectedEmployees = async () => {
+    if (selectedEmployees.value.length === 0) {
+        return;
+    }
+
+    const accepted = await requestConfirmation(confirm, {
+        message: trans("Deactivate :count selected employees?", {
+            count: selectedEmployees.value.length,
+        }),
+        header: trans("Deactivate selected"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: trans("Deactivate"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+    });
+
+    if (!accepted) {
+        return;
+    }
+
+    try {
+        await employeeService.bulkDeactivate(
+            selectedEmployees.value.map((employee) => employee.id)
+        );
+        selectedEmployees.value = [];
+        await fetchEmployees();
+        showSuccessToast(trans("Employees deactivated successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
 };
 
 const toggleEmployeeActiveStatus = async (employee) => {
-    await employeeService.toggleActiveStatus(employee.id);
-    await fetchEmployees();
+    try {
+        await employeeService.toggleActiveStatus(employee.id);
+        await fetchEmployees();
+        showSuccessToast(trans("Employee status updated successfully."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+const refreshEmployees = async () => {
+    try {
+        await fetchEmployees();
+        showSuccessToast(trans("Employees refreshed."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
 };
 
 const buildRowActions = (employee) => [
@@ -415,6 +543,7 @@ onBeforeUnmount(() => {
     <Head :title="$t('Employees')" />
 
     <AuthenticatedLayout>
+        <ConfirmDialog />
         <template #header>{{ $t("Employees") }}</template>
 
         <div class="app-grid">
@@ -482,9 +611,20 @@ onBeforeUnmount(() => {
                                     />
                                 </div>
                             </div>
-                            <Link :href="route('employees.create')">
-                                <Button :label="$t('New employee')" icon="pi pi-plus" />
-                            </Link>
+                            <div class="flex flex-col gap-2">
+                                <Link :href="route('employees.create')">
+                                    <Button :label="$t('New employee')" icon="pi pi-plus" />
+                                </Link>
+                                <Button
+                                    :label="$t('Refresh')"
+                                    icon="pi pi-refresh"
+                                    severity="secondary"
+                                    size="small"
+                                    :disabled="loading"
+                                    :loading="loading"
+                                    @click="refreshEmployees"
+                                />
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -505,13 +645,26 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
 
-                        <div class="flex gap-3">
+                        <div class="flex flex-wrap gap-3">
                             <Button
                                 :label="$t('Clear selection')"
                                 icon="pi pi-times"
                                 severity="secondary"
                                 outlined
                                 @click="selectedEmployees = []"
+                            />
+                            <Button
+                                :label="$t('Activate selected')"
+                                icon="pi pi-check-circle"
+                                severity="success"
+                                @click="activateSelectedEmployees"
+                            />
+                            <Button
+                                :label="$t('Deactivate selected')"
+                                icon="pi pi-eye-slash"
+                                severity="danger"
+                                outlined
+                                @click="deactivateSelectedEmployees"
                             />
                             <Button
                                 :label="$t('Delete selected')"

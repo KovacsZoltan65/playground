@@ -183,6 +183,50 @@ it('allows authenticated users to bulk delete employees', function () {
     }
 });
 
+it('allows authenticated users to bulk activate employees', function () {
+    $employees = Employee::factory()->count(2)->create([
+        'active' => false,
+    ]);
+
+    $response = $this->actingAs(employeeUserWithRole(Roles::ADMIN))
+        ->patchJson(route('employees.bulk-activate'), [
+            'ids' => $employees->pluck('id')->all(),
+        ]);
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('count', 2);
+
+    foreach ($employees as $employee) {
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'active' => true,
+        ]);
+    }
+});
+
+it('allows authenticated users to bulk deactivate employees', function () {
+    $employees = Employee::factory()->count(2)->create([
+        'active' => true,
+    ]);
+
+    $response = $this->actingAs(employeeUserWithRole(Roles::ADMIN))
+        ->patchJson(route('employees.bulk-deactivate'), [
+            'ids' => $employees->pluck('id')->all(),
+        ]);
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('count', 2);
+
+    foreach ($employees as $employee) {
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'active' => false,
+        ]);
+    }
+});
+
 it('forbids listing employees without permission', function () {
     Employee::factory()->count(2)->create();
 
@@ -209,5 +253,29 @@ it('forbids toggling employee status without permission', function () {
 
     $this->actingAs(User::factory()->create())
         ->patchJson(route('employees.toggle-active', $employee))
+        ->assertForbidden();
+});
+
+it('forbids bulk employee activation without permission', function () {
+    $employees = Employee::factory()->count(2)->create([
+        'active' => false,
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->patchJson(route('employees.bulk-activate'), [
+            'ids' => $employees->pluck('id')->all(),
+        ])
+        ->assertForbidden();
+});
+
+it('forbids bulk employee deactivation without permission', function () {
+    $employees = Employee::factory()->count(2)->create([
+        'active' => true,
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->patchJson(route('employees.bulk-deactivate'), [
+            'ids' => $employees->pluck('id')->all(),
+        ])
         ->assertForbidden();
 });

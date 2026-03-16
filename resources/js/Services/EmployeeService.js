@@ -31,9 +31,7 @@ class EmployeeService extends BaseService {
     }
 
     async toggleActiveStatus(employeeId) {
-        const response = await this.apiClient.patch(
-            `${this.url}/${employeeId}/toggle-active`
-        );
+        const response = await this.patch(`${this.url}/${employeeId}/toggle-active`);
 
         return response.data;
     }
@@ -48,6 +46,18 @@ class EmployeeService extends BaseService {
         const response = await this.delete(`${this.url}`, {
             data: { ids },
         });
+
+        return response.data;
+    }
+
+    async bulkActivate(ids) {
+        const response = await this.patch(`${this.url}/bulk-activate`, { ids });
+
+        return response.data;
+    }
+
+    async bulkDeactivate(ids) {
+        const response = await this.patch(`${this.url}/bulk-deactivate`, { ids });
 
         return response.data;
     }

@@ -164,6 +164,9 @@
     "Employee name": "Munkavállaló neve",
     "Employee status updated successfully.": "A munkavállaló állapota sikeresen frissítve lett.",
     "Employee updated successfully.": "A munkavállaló sikeresen frissítve lett.",
+    "Employees refreshed.": "A munkavállaló lista sikeresen frissült.",
+    "Employees activated successfully.": "A kijelölt munkavállalók sikeresen aktiválva lettek.",
+    "Employees deactivated successfully.": "A kijelölt munkavállalók sikeresen deaktiválva lettek.",
     "Employees": "Munkavállalók",
     "Employees deleted successfully.": "A munkavállalók sikeresen törölve lettek.",
     "Employees on this page": "Munkavállalók ezen az oldalon",
@@ -184,6 +187,8 @@
     "Validation boolean": "Adj meg érvényes értéket.",
     "Activate selected": "Kijelöltek aktiválása",
     "Activate :count selected companies?": ":count kijelölt cég aktiválása?",
+    "Activate :count selected employees?": ":count kijelölt munkavállaló aktiválása?",
     "Deactivate selected": "Kijelöltek deaktiválása",
-    "Deactivate :count selected companies?": ":count kijelölt cég deaktiválása?"
+    "Deactivate :count selected companies?": ":count kijelölt cég deaktiválása?",
+    "Deactivate :count selected employees?": ":count kijelölt munkavállaló deaktiválása?"
 }

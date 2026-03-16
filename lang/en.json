@@ -164,6 +164,9 @@
     "Employee name": "Employee name",
     "Employee status updated successfully.": "Employee status updated successfully.",
     "Employee updated successfully.": "Employee updated successfully.",
+    "Employees refreshed.": "Employees refreshed.",
+    "Employees activated successfully.": "Employees activated successfully.",
+    "Employees deactivated successfully.": "Employees deactivated successfully.",
     "Employees": "Employees",
     "Employees deleted successfully.": "Employees deleted successfully.",
     "Employees on this page": "Employees on this page",
@@ -184,6 +187,8 @@
     "Validation boolean": "Please choose a valid value.",
     "Activate selected": "Activate selected",
     "Activate :count selected companies?": "Activate :count selected companies?",
+    "Activate :count selected employees?": "Activate :count selected employees?",
     "Deactivate selected": "Deactivate selected",
-    "Deactivate :count selected companies?": "Deactivate :count selected companies?"
+    "Deactivate :count selected companies?": "Deactivate :count selected companies?",
+    "Deactivate :count selected employees?": "Deactivate :count selected employees?"
 }
