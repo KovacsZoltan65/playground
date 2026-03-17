@@ -28,13 +28,28 @@ class SidebarTip extends Model
             'is_active' => 'boolean',
         ];
     }
+    
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', APP_ACTIVE);
+    }
 
     public function page(): BelongsTo
     {
         return $this->belongsTo(SidebarTipPage::class, 'sidebar_tip_page_id');
     }
+    
+    /*
+     * ========================= LOGOLÁS =========================
+     */
 
     protected static string $logName = 'sidebar_tips';
+    
+    public static function getTag(): string
+    {
+        //return (new self())->logName;
+        return self::$logName;
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -44,4 +59,8 @@ class SidebarTip extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+    
+    /**
+     * ===========================================================
+     */
 }

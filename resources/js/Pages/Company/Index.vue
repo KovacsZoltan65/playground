@@ -24,7 +24,7 @@ import { useToast } from "primevue/usetoast";
 // A látható oszlopok böngészőoldali mentésének kulcsa ehhez a táblához.
 const COLUMN_VISIBILITY_STORAGE_KEY = "company-index-visible-columns";
 // Alapértelmezett üzleti oszlopok, amelyek első betöltéskor látszanak.
-const DEFAULT_VISIBLE_COLUMN_KEYS = ["name", "email", "phone", "is_active", "updated_at"];
+const DEFAULT_VISIBLE_COLUMN_KEYS = ["name", "email", "phone", "employees_count", "is_active", "updated_at"];
 const MINIMUM_VISIBLE_COLUMN_KEY = "name";
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -86,6 +86,7 @@ const availableColumns = computed(() => {
         { label: trans("Company name"), value: "name" },
         { label: trans("Email"), value: "email" },
         { label: trans("Phone"), value: "phone" },
+        { label: trans("Employees"), value: "employees_count" },
         { label: trans("Status"), value: "is_active" },
         { label: trans("Last updated"), value: "updated_at" },
     ];
@@ -954,6 +955,19 @@ onBeforeUnmount(() => {
                                 <span class="text-slate-600">{{
                                     data.phone || $t("N/A")
                                 }}</span>
+                            </template>
+                        </Column>
+
+                        <Column
+                            field="employees_count"
+                            :header="$t('Employees')"
+                            sortable
+                            v-if="isColumnVisible('employees_count')"
+                        >
+                            <template #body="{ data }">
+                                <span class="text-slate-600">
+                                    {{ data.employees_count }}
+                                </span>
                             </template>
                         </Column>
 

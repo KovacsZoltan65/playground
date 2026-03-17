@@ -7,7 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface EmployeeRepositoryInterface
 {
-    public function paginateForIndex(array $filters = [], int $perPage = 10): LengthAwarePaginator;
+    public function paginateForIndex(array $filters = [], int $perPage = 10, ?bool $needCache = null): LengthAwarePaginator;
 
     public function create(array $attributes): Employee;
 

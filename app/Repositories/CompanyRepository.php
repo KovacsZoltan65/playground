@@ -4,46 +4,61 @@ namespace App\Repositories;
 
 use App\Models\Company;
 use App\Repositories\Contracts\CompanyRepositoryInterface;
+use App\Services\CacheService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\Paginator;
 
 class CompanyRepository implements CompanyRepositoryInterface
 {
-    public function paginateForIndex(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function __construct(
+        private readonly CacheService $cacheService,
+    ) {
+    }
+    
+    public function paginateForIndex(array $filters = [], int $perPage = 10, ?bool $needCache = null): LengthAwarePaginator
     {
-        $search = $filters['global'] ?? null;
-        $name = $filters['name'] ?? null;
-        $email = $filters['email'] ?? null;
-        $phone = $filters['phone'] ?? null;
-        $isActive = $filters['is_active'] ?? null;
+        $needCache ??= (bool) config('cache.enable_companies', false);
 
-        return Company::query()
-            ->when($search, function ($query, $searchTerm) {
-                $query->where(function ($companyQuery) use ($searchTerm) {
-                    $companyQuery
-                        ->where('name', 'like', "%{$searchTerm}%")
-                        ->orWhere('email', 'like', "%{$searchTerm}%")
-                        ->orWhere('phone', 'like', "%{$searchTerm}%");
-                });
-            })
-            ->when($name, fn ($query, $value) => $query->where('name', 'like', "%{$value}%"))
-            ->when($email, fn ($query, $value) => $query->where('email', 'like', "%{$value}%"))
-            ->when($phone, fn ($query, $value) => $query->where('phone', 'like', "%{$value}%"))
-            ->when($isActive !== null, function ($query) use ($isActive) {
-                $query->where('is_active', $isActive);
-            })
-            ->orderBy('name')
-            ->paginate($perPage)
-            ->withQueryString();
+        $page = Paginator::resolveCurrentPage('page');
+        $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
+
+        $queryCallback = function () use ($filters, $perPage, $page, $appendQuery): LengthAwarePaginator {
+            $paginator = $this->buildIndexQuery($filters)
+                ->orderBy('name')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            $paginator->appends($appendQuery);
+
+            return $paginator;
+        };
+
+        if (! $needCache) {
+            return $queryCallback();
+        }
+
+        return $this->cacheService->remember(
+            $this->companiesCacheTag(),
+            $this->buildFetchCacheKey($filters, $perPage, $page),
+            $queryCallback,
+            $this->fetchCacheTtlInSeconds(),
+        );
     }
 
     public function create(array $attributes): Company
     {
-        return Company::query()->create($attributes);
+        $company = Company::query()->create($attributes);
+
+        $this->flushFetchCache();
+
+        return $company;
     }
 
     public function update(Company $company, array $attributes): Company
     {
         $company->update($attributes);
+
+        $this->flushFetchCache();
 
         return $company->refresh();
     }
@@ -54,19 +69,33 @@ class CompanyRepository implements CompanyRepositoryInterface
             'is_active' => ! $company->is_active,
         ]);
 
+        $this->flushFetchCache();
+
         return $company->refresh();
     }
 
     public function delete(Company $company): bool
     {
-        return (bool) $company->delete();
+        $deleted = (bool) $company->delete();
+
+        if ($deleted) {
+            $this->flushFetchCache();
+        }
+
+        return $deleted;
     }
 
     public function bulkDeleteByIds(array $ids): int
     {
-        return Company::query()
+        $deletedCount = Company::query()
             ->whereIn('id', $ids)
             ->delete();
+
+        if ($deletedCount > 0) {
+            $this->flushFetchCache();
+        }
+
+        return $deletedCount;
     }
 
     public function optionsForSelect(): array
@@ -80,5 +109,78 @@ class CompanyRepository implements CompanyRepositoryInterface
             ])
             ->values()
             ->all();
+    }
+
+    private function buildIndexQuery(array $filters = []): Builder
+    {
+        $search = $filters['global'] ?? null;
+        $name = $filters['name'] ?? null;
+        $email = $filters['email'] ?? null;
+        $phone = $filters['phone'] ?? null;
+        $isActive = $filters['is_active'] ?? null;
+
+        return Company::query()
+            ->withCount('employees')
+            ->when($search, function ($query, $searchTerm) {
+                $query->where(function ($companyQuery) use ($searchTerm) {
+                    $companyQuery
+                        ->where('name', 'like', "%{$searchTerm}%")
+                        ->orWhere('email', 'like', "%{$searchTerm}%")
+                        ->orWhere('phone', 'like', "%{$searchTerm}%");
+                });
+            })
+            ->when($name, fn ($query, $value) => $query->where('name', 'like', "%{$value}%"))
+            ->when($email, fn ($query, $value) => $query->where('email', 'like', "%{$value}%"))
+            ->when($phone, fn ($query, $value) => $query->where('phone', 'like', "%{$value}%"))
+            ->when($isActive !== null, function ($query) use ($isActive) {
+                $query->where('is_active', $isActive);
+            });
+    }
+
+    private function buildAppendQuery(array $filters, int $perPage, int $page): array
+    {
+        return array_filter([
+            'search' => $filters['global'] ?? null,
+            'name' => $filters['name'] ?? null,
+            'email' => $filters['email'] ?? null,
+            'phone' => $filters['phone'] ?? null,
+            'is_active' => $filters['is_active'] ?? null,
+            'per_page' => $perPage,
+            'page' => $page,
+        ], fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function buildFetchCacheKey(array $filters, int $perPage, int $page): string
+    {
+        $normalizedFilters = [
+            'global' => $filters['global'] ?? null,
+            'name' => $filters['name'] ?? null,
+            'email' => $filters['email'] ?? null,
+            'phone' => $filters['phone'] ?? null,
+            'is_active' => $filters['is_active'] ?? null,
+        ];
+
+        $payload = json_encode([
+            'filters' => $normalizedFilters,
+            'per_page' => $perPage,
+            'page' => $page,
+        ]);
+
+        return 'companies.fetch.'.sha1((string) $payload);
+    }
+
+    private function fetchCacheTtlInSeconds(): int
+    {
+        return max((int) config('cache.companies_ttl', 300), 1);
+    }
+
+    private function flushFetchCache(): void
+    {
+        $this->cacheService->forgetAll($this->companiesCacheTag());
+    }
+
+    private function companiesCacheTag(): string
+    {
+        return Company::getTag();
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\EmployeeFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,19 +30,28 @@ class Employee extends Model
             'deleted_at' => 'datetime',
         ];
     }
+    
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', APP_ACTIVE);
+    }
 
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
-
+    
+    /*
+     * ========================= LOGOLÁS =========================
+     */
+    
     protected string $logName = 'employees';
 
     public static function getTag(): string
     {
-        return 'employees';
+        return (new self())->logName;
     }
-
+    
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
@@ -50,4 +60,8 @@ class Employee extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+    
+    /**
+     * ===========================================================
+     */
 }

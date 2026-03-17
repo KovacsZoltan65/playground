@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Company;
+use App\Models\Employee;
 use App\Models\User;
 use App\Support\Permissions\Roles;
 use Database\Seeders\PermissionSeeder;
@@ -81,6 +82,31 @@ it('filters companies by datatable status filter', function () {
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.name', 'Inactive Company')
         ->assertJsonPath('data.0.is_active', false);
+});
+
+it('includes employee counts in the company index payload', function () {
+    $company = Company::factory()->create([
+        'name' => 'Acme Industries',
+    ]);
+    $otherCompany = Company::factory()->create([
+        'name' => 'Beta Logistics',
+    ]);
+
+    Employee::factory()->count(3)->create([
+        'company_id' => $company->id,
+    ]);
+    Employee::factory()->create([
+        'company_id' => $otherCompany->id,
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list'));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Acme Industries')
+        ->assertJsonPath('data.0.employees_count', 3)
+        ->assertJsonPath('data.1.name', 'Beta Logistics')
+        ->assertJsonPath('data.1.employees_count', 1);
 });
 
 it('allows authenticated users to create companies', function () {

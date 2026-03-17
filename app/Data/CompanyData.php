@@ -18,6 +18,7 @@ class CompanyData extends Data
         public ?string $phone,
         public ?string $address,
         public bool $is_active,
+        public int $employees_count = 0,
         public ?string $created_at = null,
         public ?string $updated_at = null,
     ) {
@@ -32,6 +33,7 @@ class CompanyData extends Data
             phone: $company->phone,
             address: $company->address,
             is_active: $company->is_active,
+            employees_count: (int) ($company->employees_count ?? 0),
             created_at: $company->created_at?->toDateTimeString(),
             updated_at: $company->updated_at?->toDateTimeString(),
         );

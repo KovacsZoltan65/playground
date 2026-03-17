@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('name')->index();
             $table->string('email')->index();
             $table->boolean('active')->default(true)->index();
+            
             $table->timestamps();
             $table->softDeletes();
         });

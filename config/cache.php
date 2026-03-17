@@ -105,4 +105,11 @@ return [
 
     'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_'),
 
+    'enable_companies' => false,
+    'companies_ttl' => 300,
+    'enable_employees' => false,
+    'employees_ttl' => 300,
+    'enable_sidebar_tip_pages' => false,
+    'sidebar_tip_pages_ttl' => 300,
+    
 ];

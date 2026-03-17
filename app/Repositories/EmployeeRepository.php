@@ -4,21 +4,118 @@ namespace App\Repositories;
 
 use App\Models\Employee;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Services\CacheService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\Paginator;
 
 class EmployeeRepository implements EmployeeRepositoryInterface
 {
-    public function paginateForIndex(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    public function __construct(
+        private readonly CacheService $cacheService,
+    ) {
+    }
+
+    public function paginateForIndex(array $filters = [], int $perPage = 10, ?bool $needCache = null): LengthAwarePaginator
+    {
+        $needCache ??= (bool) config('cache.enable_employees', false);
+
+        $sortField = $filters['sort_field'] ?? 'name';
+        $sortDirection = $filters['sort_direction'] ?? 'asc';
+        $page = Paginator::resolveCurrentPage('page');
+        $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
+
+        $queryCallback = function () use (
+            $filters,
+            $perPage,
+            $page,
+            $appendQuery,
+            $sortField,
+            $sortDirection
+        ): LengthAwarePaginator {
+            $query = $this->buildIndexQuery($filters);
+            $this->applySorting($query, $sortField, $sortDirection);
+
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+            $paginator->appends($appendQuery);
+
+            return $paginator;
+        };
+
+        if (! $needCache) {
+            return $queryCallback();
+        }
+
+        return $this->cacheService->remember(
+            $this->employeesCacheTag(),
+            $this->buildFetchCacheKey($filters, $perPage, $page),
+            $queryCallback,
+            $this->fetchCacheTtlInSeconds(),
+        );
+    }
+
+    public function create(array $attributes): Employee
+    {
+        $employee = Employee::query()->create($attributes);
+
+        $this->flushFetchCache();
+
+        return $employee;
+    }
+
+    public function update(Employee $employee, array $attributes): Employee
+    {
+        $employee->update($attributes);
+
+        $this->flushFetchCache();
+
+        return $employee->refresh()->load('company:id,name');
+    }
+
+    public function toggleActiveStatus(Employee $employee): Employee
+    {
+        $employee->update([
+            'active' => ! $employee->active,
+        ]);
+
+        $this->flushFetchCache();
+
+        return $employee->refresh()->load('company:id,name');
+    }
+
+    public function delete(Employee $employee): bool
+    {
+        $deleted = (bool) $employee->delete();
+
+        if ($deleted) {
+            $this->flushFetchCache();
+        }
+
+        return $deleted;
+    }
+
+    public function bulkDeleteByIds(array $ids): int
+    {
+        $deletedCount = Employee::query()
+            ->whereIn('id', $ids)
+            ->delete();
+
+        if ($deletedCount > 0) {
+            $this->flushFetchCache();
+        }
+
+        return $deletedCount;
+    }
+
+    private function buildIndexQuery(array $filters = []): Builder
     {
         $search = $filters['global'] ?? null;
         $companyId = $filters['company_id'] ?? null;
         $name = $filters['name'] ?? null;
         $email = $filters['email'] ?? null;
         $active = $filters['active'] ?? null;
-        $sortField = $filters['sort_field'] ?? 'name';
-        $sortDirection = $filters['sort_direction'] ?? 'asc';
 
-        $query = Employee::query()
+        return Employee::query()
             ->with('company:id,name')
             ->when($search, function ($query, $searchTerm) {
                 $query->where(function ($employeeQuery) use ($searchTerm) {
@@ -32,46 +129,58 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             ->when($name, fn ($query, $value) => $query->where('name', 'like', "%{$value}%"))
             ->when($email, fn ($query, $value) => $query->where('email', 'like', "%{$value}%"))
             ->when($active !== null, fn ($query) => $query->where('active', $active));
-
-        $this->applySorting($query, $sortField, $sortDirection);
-
-        return $query->paginate($perPage)->withQueryString();
     }
 
-    public function create(array $attributes): Employee
+    private function buildAppendQuery(array $filters, int $perPage, int $page): array
     {
-        return Employee::query()->create($attributes);
+        return array_filter([
+            'search' => $filters['global'] ?? null,
+            'company_id' => $filters['company_id'] ?? null,
+            'name' => $filters['name'] ?? null,
+            'email' => $filters['email'] ?? null,
+            'active' => $filters['active'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? 'name',
+            'sort_direction' => $filters['sort_direction'] ?? 'asc',
+            'per_page' => $perPage,
+            'page' => $page,
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
-    public function update(Employee $employee, array $attributes): Employee
+    private function buildFetchCacheKey(array $filters, int $perPage, int $page): string
     {
-        $employee->update($attributes);
-
-        return $employee->refresh()->load('company:id,name');
-    }
-
-    public function toggleActiveStatus(Employee $employee): Employee
-    {
-        $employee->update([
-            'active' => ! $employee->active,
+        $payload = json_encode([
+            'filters' => [
+                'global' => $filters['global'] ?? null,
+                'company_id' => $filters['company_id'] ?? null,
+                'name' => $filters['name'] ?? null,
+                'email' => $filters['email'] ?? null,
+                'active' => $filters['active'] ?? null,
+                'sort_field' => $filters['sort_field'] ?? 'name',
+                'sort_direction' => $filters['sort_direction'] ?? 'asc',
+            ],
+            'per_page' => $perPage,
+            'page' => $page,
         ]);
 
-        return $employee->refresh()->load('company:id,name');
+        return 'employees.paginate.'.sha1((string) $payload);
     }
 
-    public function delete(Employee $employee): bool
+    private function fetchCacheTtlInSeconds(): int
     {
-        return (bool) $employee->delete();
+        return max((int) config('cache.employees_ttl', 300), 1);
     }
 
-    public function bulkDeleteByIds(array $ids): int
+    private function flushFetchCache(): void
     {
-        return Employee::query()
-            ->whereIn('id', $ids)
-            ->delete();
+        $this->cacheService->forgetAll($this->employeesCacheTag());
     }
 
-    private function applySorting($query, string $sortField, string $sortDirection): void
+    private function employeesCacheTag(): string
+    {
+        return Employee::getTag();
+    }
+
+    private function applySorting(Builder $query, string $sortField, string $sortDirection): void
     {
         $direction = strtolower($sortDirection) === 'desc' ? 'desc' : 'asc';
 

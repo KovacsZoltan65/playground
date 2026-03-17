@@ -32,15 +32,28 @@ class SidebarTipPage extends Model
     {
         return $this->hasMany(SidebarTip::class)->orderBy('sort_order')->orderBy('id');
     }
+    
+    /*
+     * ========================= LOGOLÁS =========================
+     */
 
-    protected static string $logName = 'sidebar_tip_pages';
+    protected string $logName = 'sidebar_tip_pages';
+    
+    public static function getTag(): string
+    {
+        return (new self())->logName;
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->useLogName(self::$logName)
+            ->useLogName($this->logName)
             ->logOnly($this->fillable)
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
+    
+    /**
+     * ===========================================================
+     */
 }
