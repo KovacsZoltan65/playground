@@ -1,13 +1,16 @@
 <script setup>
 import SidebarUsageTips from '@/Components/SidebarUsageTips.vue';
-import { computed, ref } from 'vue';
+import { flushQueuedToast } from '@/Support/toast/toastHelpers';
+import { computed, onMounted, ref, watch } from 'vue';
 import { currentLocale, trans } from 'laravel-vue-i18n';
 import { Link, usePage } from '@inertiajs/vue3';
 import Avatar from 'primevue/avatar';
 import Toast from 'primevue/toast';
+import { useToast } from 'primevue/usetoast';
 
 const page = usePage();
 const sidebarOpen = ref(false);
+const toast = useToast();
 
 const user = computed(() => page.props.auth.user);
 const userPermissions = computed(() => page.props.auth.permissions ?? []);
@@ -108,6 +111,14 @@ const navigationSections = computed(() => {
 });
 
 const isActive = (name) => route().current(name);
+
+const syncQueuedToast = () => {
+    flushQueuedToast(toast);
+};
+
+onMounted(syncQueuedToast);
+
+watch(() => page.url, syncQueuedToast);
 </script>
 
 <template>
@@ -190,7 +201,7 @@ const isActive = (name) => route().current(name);
 
         <div class="min-w-0 flex-1 overflow-hidden lg:h-screen">
             <div class="flex h-full min-h-0 flex-col overflow-y-auto">
-            <Toast position="top-right" />
+            <Toast position="top-right" class="app-toast" />
             <header
                 class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10"
             >

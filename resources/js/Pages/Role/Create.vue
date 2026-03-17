@@ -4,12 +4,14 @@ import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import roleValidationSchema from "@/Validation/schemas/role.json";
 import RoleFields from "@/Pages/Role/Partials/RoleFields.vue";
 import roleService from "@/Services/RoleService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, reactive, ref } from "vue";
 import { trans } from "laravel-vue-i18n";
 import useVuelidate from "@vuelidate/core";
 import Button from "primevue/button";
 import Card from "primevue/card";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     guardOptions: { type: Array, default: () => [] },
@@ -24,6 +26,7 @@ const form = reactive({
 
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 const rules = computed(() =>
     buildVuelidateRules(roleValidationSchema, {
         translator: trans,
@@ -43,11 +46,14 @@ const submit = async () => {
     }
 
     try {
-        await roleService.store(form);
+        const response = await roleService.store(form);
+        queueSuccessToast(response.message);
         router.get(route("roles.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

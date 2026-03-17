@@ -122,4 +122,15 @@
     .app-row-action-menu-item-label {
         color: inherit;
     }
+
+    .app-toast {
+        margin-top: 5.5rem;
+        z-index: 70;
+    }
+
+    @screen lg {
+        .app-toast {
+            margin-top: 6.5rem;
+        }
+    }
 }

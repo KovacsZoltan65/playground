@@ -2,10 +2,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import UsageTipPageFields from '@/Pages/UsageTips/Partials/UsageTipPageFields.vue';
 import sidebarTipPageService from '@/Services/SidebarTipPageService';
+import { queueSuccessToast, showErrorToast } from '@/Support/toast/toastHelpers';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { reactive, ref } from 'vue';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import { useToast } from 'primevue/usetoast';
 
 const props = defineProps({
     pageTargets: {
@@ -29,17 +31,21 @@ const form = reactive({
 });
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 
 const submit = async () => {
     processing.value = true;
     Object.keys(errors).forEach((key) => delete errors[key]);
 
     try {
-        await sidebarTipPageService.store(form);
+        const response = await sidebarTipPageService.store(form);
+        queueSuccessToast(response.message);
         router.get(route('usage-tips.index'));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

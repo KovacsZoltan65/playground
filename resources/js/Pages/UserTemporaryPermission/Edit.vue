@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import UserTemporaryPermissionFields from "@/Pages/UserTemporaryPermission/Partials/UserTemporaryPermissionFields.vue";
 import userTemporaryPermissionService from "@/Services/UserTemporaryPermissionService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import userTemporaryPermissionValidationSchema from "@/Validation/schemas/userTemporaryPermission.json";
 import { Head, Link, router } from "@inertiajs/vue3";
@@ -11,6 +12,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import ProgressSpinner from "primevue/progressspinner";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     userTemporaryPermissionId: { type: Number, required: true },
@@ -20,6 +22,7 @@ const props = defineProps({
 
 const loading = ref(true);
 const processing = ref(false);
+const toast = useToast();
 const form = reactive({
     user_id: null,
     permission_id: null,
@@ -59,11 +62,14 @@ const submit = async () => {
     }
 
     try {
-        await userTemporaryPermissionService.update(props.userTemporaryPermissionId, form);
+        const response = await userTemporaryPermissionService.update(props.userTemporaryPermissionId, form);
+        queueSuccessToast(response.message);
         router.get(route("user-temporary-permissions.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

@@ -19,7 +19,7 @@ class UserService
         $paginator = $this->users->paginateForIndex($filters, $perPage);
 
         return [
-            'data' => $paginator->getCollection()
+            'data' => collect($paginator->items())
                 ->map(fn (User $user) => UserData::fromModel($user))
                 ->values()
                 ->all(),

@@ -117,6 +117,24 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
             ->all();
     }
 
+    public function userEffectivePermissionIds(): array
+    {
+        return User::query()
+            ->with([
+                'permissions:id',
+                'roles:id',
+                'roles.permissions:id',
+                'temporaryPermissions' => fn ($query) => $query
+                    ->select(['id', 'user_id', 'permission_id'])
+                    ->activeAt(),
+            ])
+            ->get(['id'])
+            ->mapWithKeys(fn (User $user) => [
+                $user->id => $this->resolveEffectivePermissionIds($user),
+            ])
+            ->all();
+    }
+
     private function buildIndexQuery(array $filters = []): Builder
     {
         $search = $filters['global'] ?? null;
@@ -146,6 +164,17 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
             ->when($userId, fn (Builder $query, $value) => $query->where('user_id', (int) $value))
             ->when($permissionId, fn (Builder $query, $value) => $query->where('permission_id', (int) $value))
             ->when($status, fn (Builder $query, string $value) => $query->withStatus($value));
+    }
+
+    private function resolveEffectivePermissionIds(User $user): array
+    {
+        return $user->permissions
+            ->pluck('id')
+            ->merge($user->roles->flatMap(fn ($role) => $role->permissions->pluck('id')))
+            ->merge($user->temporaryPermissions->pluck('permission_id'))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function buildAppendQuery(array $filters, int $perPage, int $page): array

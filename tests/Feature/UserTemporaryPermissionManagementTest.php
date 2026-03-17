@@ -4,6 +4,7 @@ use App\Models\Company;
 use App\Models\Employee;
 use App\Models\User;
 use App\Models\UserTemporaryPermission;
+use App\Services\UserTemporaryPermissionService;
 use App\Support\Permissions\CompanyPermissions;
 use App\Support\Permissions\EmployeePermissions;
 use App\Support\Permissions\Roles;
@@ -66,6 +67,26 @@ it('forbids listing temporary permission assignments without access', function (
     $this->actingAs(temporaryPermissionUserWithRole(Roles::USER))
         ->getJson(route('user-temporary-permissions.list'))
         ->assertForbidden();
+});
+
+it('returns effective user permission ids for create-page permission filtering', function () {
+    $targetUser = temporaryPermissionUserWithRole(Roles::MANAGER);
+    $permanentPermission = Permission::findByName(EmployeePermissions::UPDATE, 'web');
+    $temporaryPermission = Permission::findByName(CompanyPermissions::UPDATE, 'web');
+
+    assignTemporaryPermission(
+        $targetUser,
+        CompanyPermissions::UPDATE,
+        '2026-03-17 08:00:00',
+        '2026-03-20 18:00:00',
+    );
+
+    $this->travelTo(now()->setDate(2026, 3, 18)->setTime(12, 0));
+
+    $ids = app(UserTemporaryPermissionService::class)->userEffectivePermissionIds()[$targetUser->id] ?? [];
+
+    expect($ids)->toContain($permanentPermission->id);
+    expect($ids)->toContain($temporaryPermission->id);
 });
 
 it('creates a temporary permission assignment', function () {

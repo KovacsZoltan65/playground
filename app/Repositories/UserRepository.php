@@ -130,10 +130,26 @@ class UserRepository implements UserRepositoryInterface
         return User::query()
             ->with('roles:id,name,guard_name')
             ->withCount('roles')
-            ->when($search, fn (Builder $query, $value) => $query->whereLike(['name', 'email', 'roles.name'], $value))
+            ->when($search, fn (Builder $query, $value) => $this->applyGlobalSearch($query, (string) $value))
             ->when($name, fn (Builder $query, $value) => $query->where('name', 'like', "%{$value}%"))
             ->when($email, fn (Builder $query, $value) => $query->where('email', 'like', "%{$value}%"))
             ->when($roleId, fn (Builder $query, $value) => $query->whereHas('roles', fn (Builder $roleQuery) => $roleQuery->where('roles.id', (int) $value)));
+    }
+
+    private function applyGlobalSearch(Builder $query, string $search): Builder
+    {
+        $terms = preg_split('/\s+/', trim($search)) ?: [$search];
+
+        return $query->where(function (Builder $searchQuery) use ($terms): void {
+            foreach ($terms as $term) {
+                $searchQuery->where(function (Builder $termQuery) use ($term): void {
+                    $termQuery
+                        ->orWhere('name', 'like', "%{$term}%")
+                        ->orWhere('email', 'like', "%{$term}%")
+                        ->orWhereHas('roles', fn (Builder $roleQuery) => $roleQuery->where('name', 'like', "%{$term}%"));
+                });
+            }
+        });
     }
 
     private function buildAppendQuery(array $filters, int $perPage, int $page): array

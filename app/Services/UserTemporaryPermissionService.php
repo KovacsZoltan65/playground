@@ -76,4 +76,9 @@ class UserTemporaryPermissionService
     {
         return $this->assignments->permissionOptions();
     }
+
+    public function userEffectivePermissionIds(): array
+    {
+        return $this->assignments->userEffectivePermissionIds();
+    }
 }

@@ -4,12 +4,14 @@ import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import permissionValidationSchema from "@/Validation/schemas/permission.json";
 import PermissionFields from "@/Pages/Permission/Partials/PermissionFields.vue";
 import permissionService from "@/Services/PermissionService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, reactive, ref } from "vue";
 import { trans } from "laravel-vue-i18n";
 import useVuelidate from "@vuelidate/core";
 import Button from "primevue/button";
 import Card from "primevue/card";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     guardOptions: { type: Array, default: () => [] },
@@ -22,6 +24,7 @@ const form = reactive({
 
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 const rules = computed(() =>
     buildVuelidateRules(permissionValidationSchema, {
         translator: trans,
@@ -41,11 +44,14 @@ const submit = async () => {
     }
 
     try {
-        await permissionService.store(form);
+        const response = await permissionService.store(form);
+        queueSuccessToast(response.message);
         router.get(route("permissions.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

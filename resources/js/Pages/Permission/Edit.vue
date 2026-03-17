@@ -4,6 +4,7 @@ import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import permissionValidationSchema from "@/Validation/schemas/permission.json";
 import PermissionFields from "@/Pages/Permission/Partials/PermissionFields.vue";
 import permissionService from "@/Services/PermissionService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onMounted, reactive, ref } from "vue";
 import { trans } from "laravel-vue-i18n";
@@ -11,6 +12,7 @@ import useVuelidate from "@vuelidate/core";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import ProgressSpinner from "primevue/progressspinner";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     permissionId: { type: Number, required: true },
@@ -19,6 +21,7 @@ const props = defineProps({
 
 const loading = ref(true);
 const processing = ref(false);
+const toast = useToast();
 const form = reactive({
     name: "",
     guard_name: props.guardOptions[0]?.value ?? "web",
@@ -55,11 +58,14 @@ const submit = async () => {
     }
 
     try {
-        await permissionService.update(props.permissionId, form);
+        const response = await permissionService.update(props.permissionId, form);
+        queueSuccessToast(response.message);
         router.get(route("permissions.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

@@ -34,6 +34,7 @@ class UserTemporaryPermissionController extends Controller
         return Inertia::render('UserTemporaryPermission/Create', [
             'userOptions' => $this->service->userOptions(),
             'permissionOptions' => $this->service->permissionOptions(),
+            'userEffectivePermissionIds' => $this->service->userEffectivePermissionIds(),
         ]);
     }
 

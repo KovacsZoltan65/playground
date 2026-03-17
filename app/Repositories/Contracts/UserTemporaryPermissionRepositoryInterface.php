@@ -20,4 +20,6 @@ interface UserTemporaryPermissionRepositoryInterface
     public function userOptions(): array;
 
     public function permissionOptions(): array;
+
+    public function userEffectivePermissionIds(): array;
 }

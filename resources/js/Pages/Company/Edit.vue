@@ -4,6 +4,7 @@ import { buildVuelidateRules } from '@/Support/validation/buildVuelidateRules';
 import companyValidationSchema from '@/Validation/schemas/company.json';
 import CompanyFields from '@/Pages/Company/Partials/CompanyFields.vue';
 import companyService from '@/Services/CompanyService';
+import { queueSuccessToast, showErrorToast } from '@/Support/toast/toastHelpers';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { trans } from 'laravel-vue-i18n';
@@ -11,6 +12,7 @@ import useVuelidate from '@vuelidate/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import ProgressSpinner from 'primevue/progressspinner';
+import { useToast } from 'primevue/usetoast';
 
 const props = defineProps({
     companyId: {
@@ -21,6 +23,7 @@ const props = defineProps({
 
 const loading = ref(true);
 const processing = ref(false);
+const toast = useToast();
 const form = reactive({
     name: '',
     email: '',
@@ -62,11 +65,14 @@ const submit = async () => {
     }
 
     try {
-        await companyService.update(props.companyId, form);
+        const response = await companyService.update(props.companyId, form);
+        queueSuccessToast(response.message);
         router.get(route('companies.index'));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

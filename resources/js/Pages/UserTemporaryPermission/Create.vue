@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import UserTemporaryPermissionFields from "@/Pages/UserTemporaryPermission/Partials/UserTemporaryPermissionFields.vue";
 import userTemporaryPermissionService from "@/Services/UserTemporaryPermissionService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import userTemporaryPermissionValidationSchema from "@/Validation/schemas/userTemporaryPermission.json";
 import { Head, Link, router } from "@inertiajs/vue3";
@@ -10,10 +11,12 @@ import { trans } from "laravel-vue-i18n";
 import { computed, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     userOptions: { type: Array, default: () => [] },
     permissionOptions: { type: Array, default: () => [] },
+    userEffectivePermissionIds: { type: Object, default: () => ({}) },
 });
 
 const form = reactive({
@@ -25,6 +28,7 @@ const form = reactive({
 });
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 const rules = computed(() =>
     buildVuelidateRules(userTemporaryPermissionValidationSchema, {
         translator: trans,
@@ -44,11 +48,14 @@ const submit = async () => {
     }
 
     try {
-        await userTemporaryPermissionService.store(form);
+        const response = await userTemporaryPermissionService.store(form);
+        queueSuccessToast(response.message);
         router.get(route("user-temporary-permissions.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;
@@ -89,6 +96,7 @@ const submit = async () => {
                         :validation="v$"
                         :user-options="userOptions"
                         :permission-options="permissionOptions"
+                        :user-effective-permission-ids="userEffectivePermissionIds"
                     />
 
                     <div class="flex justify-end gap-3">

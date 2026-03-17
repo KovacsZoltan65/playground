@@ -1,4 +1,5 @@
 <script setup>
+import { computed, watch } from "vue";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import Textarea from "primevue/textarea";
@@ -9,6 +10,8 @@ const props = defineProps({
     validation: { type: Object, default: null },
     userOptions: { type: Array, default: () => [] },
     permissionOptions: { type: Array, default: () => [] },
+    userEffectivePermissionIds: { type: Object, default: () => ({}) },
+    currentPermissionId: { type: [Number, String, null], default: null },
 });
 
 function resolveValidationField(field) {
@@ -42,6 +45,35 @@ function resolveFieldError(field) {
 function touchField(field) {
     resolveValidationField(field)?.$touch?.();
 }
+
+const disabledPermissionIds = computed(() => {
+    if (!props.form.user_id) {
+        return [];
+    }
+
+    const permissionIds = props.userEffectivePermissionIds?.[props.form.user_id] ?? [];
+    const currentPermissionId = props.currentPermissionId == null
+        ? null
+        : Number(props.currentPermissionId);
+
+    return permissionIds.filter((permissionId) => permissionId !== currentPermissionId);
+});
+
+const permissionOptionsForSelectedUser = computed(() =>
+    props.permissionOptions.map((option) => ({
+        ...option,
+        disabled: disabledPermissionIds.value.includes(option.value),
+    }))
+);
+
+watch(
+    () => [props.form.user_id, props.currentPermissionId, disabledPermissionIds.value.join(","), props.form.permission_id],
+    () => {
+        if (props.form.permission_id && disabledPermissionIds.value.includes(props.form.permission_id)) {
+            props.form.permission_id = null;
+        }
+    }
+);
 </script>
 
 <template>
@@ -73,9 +105,10 @@ function touchField(field) {
             <Select
                 id="permission_id"
                 v-model="form.permission_id"
-                :options="permissionOptions"
+                :options="permissionOptionsForSelectedUser"
                 option-label="label"
                 option-value="value"
+                option-disabled="disabled"
                 filter
                 class="w-full"
                 :invalid="Boolean(resolveFieldError('permission_id'))"

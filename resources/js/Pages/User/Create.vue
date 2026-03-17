@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import UserFields from "@/Pages/User/Partials/UserFields.vue";
 import userService from "@/Services/UserService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import userValidationSchema from "@/Validation/schemas/user.json";
 import { Head, Link, router } from "@inertiajs/vue3";
@@ -10,6 +11,7 @@ import { trans } from "laravel-vue-i18n";
 import useVuelidate from "@vuelidate/core";
 import Button from "primevue/button";
 import Card from "primevue/card";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     roleOptions: { type: Array, default: () => [] },
@@ -25,6 +27,7 @@ const form = reactive({
 
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 const rules = computed(() =>
     buildVuelidateRules(userValidationSchema, {
         translator: trans,
@@ -44,11 +47,14 @@ const submit = async () => {
     }
 
     try {
-        await userService.store(form);
+        const response = await userService.store(form);
+        queueSuccessToast(response.message);
         router.get(route("users.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

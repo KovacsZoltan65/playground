@@ -4,6 +4,7 @@ import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import employeeValidationSchema from "@/Validation/schemas/employee.json";
 import EmployeeFields from "@/Pages/Employee/Partials/EmployeeFields.vue";
 import employeeService from "@/Services/EmployeeService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { Head, Link, router } from "@inertiajs/vue3";
 import useVuelidate from "@vuelidate/core";
 import { trans } from "laravel-vue-i18n";
@@ -11,6 +12,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import ProgressSpinner from "primevue/progressspinner";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     employeeId: {
@@ -25,6 +27,7 @@ const props = defineProps({
 
 const loading = ref(true);
 const processing = ref(false);
+const toast = useToast();
 const form = reactive({
     company_id: null,
     name: "",
@@ -65,11 +68,14 @@ const submit = async () => {
     }
 
     try {
-        await employeeService.update(props.employeeId, form);
+        const response = await employeeService.update(props.employeeId, form);
+        queueSuccessToast(response.message);
         router.get(route("employees.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

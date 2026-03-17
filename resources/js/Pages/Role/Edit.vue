@@ -4,6 +4,7 @@ import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import roleValidationSchema from "@/Validation/schemas/role.json";
 import RoleFields from "@/Pages/Role/Partials/RoleFields.vue";
 import roleService from "@/Services/RoleService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onMounted, reactive, ref } from "vue";
 import { trans } from "laravel-vue-i18n";
@@ -11,6 +12,7 @@ import useVuelidate from "@vuelidate/core";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import ProgressSpinner from "primevue/progressspinner";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     roleId: { type: Number, required: true },
@@ -20,6 +22,7 @@ const props = defineProps({
 
 const loading = ref(true);
 const processing = ref(false);
+const toast = useToast();
 const form = reactive({
     name: "",
     guard_name: props.guardOptions[0]?.value ?? "web",
@@ -57,11 +60,14 @@ const submit = async () => {
     }
 
     try {
-        await roleService.update(props.roleId, form);
+        const response = await roleService.update(props.roleId, form);
+        queueSuccessToast(response.message);
         router.get(route("roles.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

@@ -4,12 +4,14 @@ import { buildVuelidateRules } from '@/Support/validation/buildVuelidateRules';
 import companyValidationSchema from '@/Validation/schemas/company.json';
 import CompanyFields from '@/Pages/Company/Partials/CompanyFields.vue';
 import companyService from '@/Services/CompanyService';
+import { queueSuccessToast, showErrorToast } from '@/Support/toast/toastHelpers';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 import { trans } from 'laravel-vue-i18n';
 import useVuelidate from '@vuelidate/core';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import { useToast } from 'primevue/usetoast';
 
 const form = reactive({
     name: '',
@@ -21,6 +23,7 @@ const form = reactive({
 
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 const rules = computed(() =>
     buildVuelidateRules(companyValidationSchema, {
         translator: trans,
@@ -42,11 +45,14 @@ const submit = async () => {
     }
 
     try {
-        await companyService.store(form);
+        const response = await companyService.store(form);
+        queueSuccessToast(response.message);
         router.get(route('companies.index'));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

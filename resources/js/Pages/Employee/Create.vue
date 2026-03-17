@@ -4,12 +4,14 @@ import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import employeeValidationSchema from "@/Validation/schemas/employee.json";
 import EmployeeFields from "@/Pages/Employee/Partials/EmployeeFields.vue";
 import employeeService from "@/Services/EmployeeService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { Head, Link, router } from "@inertiajs/vue3";
 import useVuelidate from "@vuelidate/core";
 import { trans } from "laravel-vue-i18n";
 import { computed, reactive, ref } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     companyOptions: {
@@ -27,6 +29,7 @@ const form = reactive({
 
 const errors = reactive({});
 const processing = ref(false);
+const toast = useToast();
 const rules = computed(() =>
     buildVuelidateRules(employeeValidationSchema, {
         translator: trans,
@@ -48,11 +51,14 @@ const submit = async () => {
     }
 
     try {
-        await employeeService.store(form);
+        const response = await employeeService.store(form);
+        queueSuccessToast(response.message);
         router.get(route("employees.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;

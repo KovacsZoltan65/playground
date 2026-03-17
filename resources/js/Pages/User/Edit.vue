@@ -2,6 +2,7 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import UserFields from "@/Pages/User/Partials/UserFields.vue";
 import userService from "@/Services/UserService";
+import { queueSuccessToast, showErrorToast } from "@/Support/toast/toastHelpers";
 import { buildVuelidateRules } from "@/Support/validation/buildVuelidateRules";
 import userValidationSchema from "@/Validation/schemas/user.json";
 import { Head, Link, router } from "@inertiajs/vue3";
@@ -11,6 +12,7 @@ import useVuelidate from "@vuelidate/core";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import ProgressSpinner from "primevue/progressspinner";
+import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     userId: { type: Number, required: true },
@@ -19,6 +21,7 @@ const props = defineProps({
 
 const loading = ref(true);
 const processing = ref(false);
+const toast = useToast();
 const form = reactive({
     name: "",
     email: "",
@@ -62,11 +65,14 @@ const submit = async () => {
     }
 
     try {
-        await userService.update(props.userId, form);
+        const response = await userService.update(props.userId, form);
+        queueSuccessToast(response.message);
         router.get(route("users.index"));
     } catch (error) {
         if (error.response?.status === 422) {
             Object.assign(errors, error.response.data.errors);
+        } else {
+            showErrorToast(toast, error?.response?.data?.message);
         }
     } finally {
         processing.value = false;
