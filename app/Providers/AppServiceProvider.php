@@ -5,24 +5,28 @@ namespace App\Providers;
 use App\Models\Company;
 use App\Models\Employee;
 use App\Models\SidebarTipPage;
+use App\Models\User;
 use App\Models\UserTemporaryPermission;
 use App\Policies\CompanyPolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SidebarTipPagePolicy;
+use App\Policies\UserPolicy;
 use App\Policies\UserTemporaryPermissionPolicy;
 use App\Repositories\CompanyRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\PermissionRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\SidebarTipPageRepository;
+use App\Repositories\UserRepository;
 use App\Repositories\UserTemporaryPermissionRepository;
 use App\Repositories\Contracts\CompanyRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\PermissionRepositoryInterface;
 use App\Repositories\Contracts\RoleRepositoryInterface;
 use App\Repositories\Contracts\SidebarTipPageRepositoryInterface;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Contracts\UserTemporaryPermissionRepositoryInterface;
 use App\Services\SidebarTipPageService;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
         $this->app->bind(RoleRepositoryInterface::class, RoleRepository::class);
         $this->app->bind(SidebarTipPageRepositoryInterface::class, SidebarTipPageRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(UserTemporaryPermissionRepositoryInterface::class, UserTemporaryPermissionRepository::class);
     }
 
@@ -164,6 +169,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Permission::class, PermissionPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(SidebarTipPage::class, SidebarTipPagePolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
         Gate::policy(UserTemporaryPermission::class, UserTemporaryPermissionPolicy::class);
 
         Vite::prefetch(concurrency: 3);

@@ -113,6 +113,8 @@ return [
     'permissions_ttl' => 300,
     'enable_roles' => false,
     'roles_ttl' => 300,
+    'enable_users' => false,
+    'users_ttl' => 300,
     'enable_user_temporary_permissions' => false,
     'user_temporary_permissions_ttl' => 300,
     'enable_sidebar_tip_pages' => false,

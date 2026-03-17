@@ -1,8 +1,7 @@
 <script setup>
-// Közös layout és komponensek az oldal felépítéséhez.
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
-import companyService from "@/Services/CompanyService";
+import userService from "@/Services/UserService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
@@ -21,25 +20,24 @@ import Tag from "primevue/tag";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 
-// A látható oszlopok böngészőoldali mentésének kulcsa ehhez a táblához.
-const COLUMN_VISIBILITY_STORAGE_KEY = "company-index-visible-columns";
-// Alapértelmezett üzleti oszlopok, amelyek első betöltéskor látszanak.
+const props = defineProps({
+    roleOptions: { type: Array, default: () => [] },
+});
+
+const COLUMN_VISIBILITY_STORAGE_KEY = "user-index-visible-columns";
 const DEFAULT_VISIBLE_COLUMN_KEYS = [
     "name",
     "email",
-    "phone",
-    "employees_count",
-    "is_active",
+    "roles_count",
+    "email_verified_at",
     "updated_at",
 ];
 const MINIMUM_VISIBLE_COLUMN_KEY = "name";
 const SEARCH_DEBOUNCE_MS = 350;
 
-// A backendről betöltött rekordok és a DataTable fő állapotai.
-const companies = ref([]);
-const selectedCompanies = ref([]);
+const users = ref([]);
+const selectedUsers = ref([]);
 const loading = ref(false);
-// A felhasználó által kiválasztott, látható oszlopkulcsok listája.
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
@@ -47,37 +45,18 @@ let isProgrammaticSearchUpdate = false;
 const confirm = useConfirm();
 const toast = useToast();
 
-// A PrimeVue DataTable szűrőmodellje.
 const tableFilters = ref({
-    global: {
-        value: null,
-        matchMode: "contains",
-    },
-    name: {
-        value: null,
-        matchMode: "contains",
-    },
-    email: {
-        value: null,
-        matchMode: "contains",
-    },
-    phone: {
-        value: null,
-        matchMode: "contains",
-    },
-    is_active: {
-        value: null,
-        matchMode: "equals",
-    },
+    global: { value: null, matchMode: "contains" },
+    name: { value: null, matchMode: "contains" },
+    email: { value: null, matchMode: "contains" },
+    role_id: { value: null, matchMode: "equals" },
 });
 
-// Szerveroldali lapozás kliensoldali állapota.
 const tableState = reactive({
     page: 1,
     perPage: 10,
 });
 
-// A backendtől kapott lapozási metaadatok.
 const meta = reactive({
     current_page: 1,
     last_page: 1,
@@ -85,21 +64,18 @@ const meta = reactive({
     total: 0,
 });
 
-// A MultiSelect oszlopválasztó opciói lokalizált feliratokkal.
 const availableColumns = computed(() => {
     currentLocale.value;
 
     return [
-        { label: trans("Company name"), value: "name" },
+        { label: trans("User name"), value: "name" },
         { label: trans("Email"), value: "email" },
-        { label: trans("Phone"), value: "phone" },
-        { label: trans("Employees"), value: "employees_count" },
-        { label: trans("Status"), value: "is_active" },
+        { label: trans("Assigned roles"), value: "roles_count" },
+        { label: trans("Email verified"), value: "email_verified_at" },
         { label: trans("Last updated"), value: "updated_at" },
     ];
 });
 
-// Kompakt felirat a nézetbeállítás triggerhez.
 const visibleColumnsSummary = computed(() => {
     currentLocale.value;
 
@@ -118,46 +94,37 @@ const selectedColumnsLabel = computed(() =>
     })
 );
 
-// A státusz oszlop szűrőjének választható opciói.
-const statusOptions = computed(() => {
+const roleFilterOptions = computed(() => {
     currentLocale.value;
 
-    return [
-        { label: trans("All statuses"), value: null },
-        { label: trans("Active"), value: true },
-        { label: trans("Inactive"), value: false },
-    ];
+    return [{ label: trans("All roles"), value: null }, ...props.roleOptions];
 });
 
-// Gyors statisztikák a jelenleg betöltött oldal rekordjai alapján.
 const quickStats = computed(() => {
     currentLocale.value;
 
-    const activeCount = companies.value.filter((company) => company.is_active).length;
-    const missingContactCount = companies.value.filter(
-        (company) => !company.email || !company.phone
-    ).length;
+    const verifiedCount = users.value.filter((user) => Boolean(user.email_verified_at)).length;
+    const missingRoleCount = users.value.filter((user) => (user.roles_count ?? 0) === 0).length;
 
     return [
         {
-            label: trans("Companies on this page"),
-            value: companies.value.length,
+            label: trans("Users on this page"),
+            value: users.value.length,
             caption: trans("Rows currently loaded in the table"),
         },
         {
-            label: trans("Active on this page"),
-            value: activeCount,
-            caption: trans("Active records within the current page"),
+            label: trans("Verified on this page"),
+            value: verifiedCount,
+            caption: trans("Users with verified email addresses in the current view"),
         },
         {
-            label: trans("Incomplete on this page"),
-            value: missingContactCount,
-            caption: trans("Rows missing phone or email on this page"),
+            label: trans("Without roles on this page"),
+            value: missingRoleCount,
+            caption: trans("Users currently missing assigned roles"),
         },
     ];
 });
 
-// Az aktív szűrők listája gyors áttekintéshez és egyenkénti törléshez.
 const activeFilters = computed(() => {
     currentLocale.value;
 
@@ -173,7 +140,7 @@ const activeFilters = computed(() => {
     if (tableFilters.value.name.value) {
         filters.push({
             key: "name",
-            label: `${trans("Company name")}: ${tableFilters.value.name.value}`,
+            label: `${trans("User name")}: ${tableFilters.value.name.value}`,
         });
     }
 
@@ -184,41 +151,34 @@ const activeFilters = computed(() => {
         });
     }
 
-    if (tableFilters.value.phone.value) {
-        filters.push({
-            key: "phone",
-            label: `${trans("Phone")}: ${tableFilters.value.phone.value}`,
-        });
-    }
+    if (tableFilters.value.role_id.value) {
+        const roleLabel = roleFilterOptions.value.find(
+            (option) => option.value === tableFilters.value.role_id.value
+        )?.label;
 
-    if (tableFilters.value.is_active.value !== null) {
         filters.push({
-            key: "is_active",
-            label: `${trans("Status")}: ${
-                tableFilters.value.is_active.value ? trans("Active") : trans("Inactive")
-            }`,
+            key: "role_id",
+            label: `${trans("Role")}: ${roleLabel ?? tableFilters.value.role_id.value}`,
         });
     }
 
     return filters;
 });
 
-// A céglista lekérése az aktuális szűrők és lapozási állapot alapján.
-const fetchCompanies = async () => {
+const fetchUsers = async () => {
     loading.value = true;
 
     try {
-        const response = await companyService.list({
+        const response = await userService.list({
             search: tableFilters.value.global.value || undefined,
             name: tableFilters.value.name.value || undefined,
             email: tableFilters.value.email.value || undefined,
-            phone: tableFilters.value.phone.value || undefined,
-            is_active: tableFilters.value.is_active.value ?? undefined,
+            role_id: tableFilters.value.role_id.value || undefined,
             page: tableState.page,
             per_page: tableState.perPage,
         });
 
-        companies.value = response.data;
+        users.value = response.data;
         Object.assign(meta, response.meta);
     } finally {
         loading.value = false;
@@ -243,24 +203,21 @@ const showErrorToast = (detail = trans("Action failed.")) => {
     });
 };
 
-// Lapozó esemény kezelése.
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
     tableState.perPage = event.rows;
-    await fetchCompanies();
+    await fetchUsers();
 };
 
-// Szűrőváltozás kezelése.
 const onFilter = async (event) => {
     tableFilters.value = event.filters;
     tableState.page = 1;
-    await fetchCompanies();
+    await fetchUsers();
 };
 
-// Egyetlen cég törlése megerősítés után.
-const removeCompany = async (company) => {
+const removeUser = async (user) => {
     const accepted = await requestConfirmation(confirm, {
-        message: trans("Delete :name?", { name: company.name }),
+        message: trans("Delete :name?", { name: user.name }),
         header: trans("Delete"),
         icon: "pi pi-exclamation-triangle",
         acceptLabel: trans("Delete"),
@@ -273,28 +230,27 @@ const removeCompany = async (company) => {
     }
 
     try {
-        await companyService.destroy(company.id);
+        await userService.destroy(user.id);
 
-        if (companies.value.length === 1 && tableState.page > 1) {
+        if (users.value.length === 1 && tableState.page > 1) {
             tableState.page -= 1;
         }
 
-        await fetchCompanies();
-        showSuccessToast(trans("Company deleted successfully."));
+        await fetchUsers();
+        showSuccessToast(trans("User deleted successfully."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
     }
 };
 
-// Több kijelölt cég törlése egyszerre.
-const removeSelectedCompanies = async () => {
-    if (selectedCompanies.value.length === 0) {
+const removeSelectedUsers = async () => {
+    if (selectedUsers.value.length === 0) {
         return;
     }
 
     const accepted = await requestConfirmation(confirm, {
-        message: trans("Delete :count selected companies?", {
-            count: selectedCompanies.value.length,
+        message: trans("Delete :count selected users?", {
+            count: selectedUsers.value.length,
         }),
         header: trans("Delete selected"),
         icon: "pi pi-exclamation-triangle",
@@ -308,192 +264,103 @@ const removeSelectedCompanies = async () => {
     }
 
     try {
-        await companyService.bulkDestroy(
-            selectedCompanies.value.map((company) => company.id)
-        );
-        selectedCompanies.value = [];
+        await userService.bulkDestroy(selectedUsers.value.map((user) => user.id));
+        selectedUsers.value = [];
 
-        if (companies.value.length === 1 && tableState.page > 1) {
+        if (users.value.length === 1 && tableState.page > 1) {
             tableState.page -= 1;
         }
 
-        await fetchCompanies();
-        showSuccessToast(trans("Companies deleted successfully."));
+        await fetchUsers();
+        showSuccessToast(trans("Users deleted successfully."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
     }
 };
 
-// Több kijelölt cég aktiválása egyszerre.
-const activateSelectedCompanies = async () => {
-    if (selectedCompanies.value.length === 0) {
-        return;
-    }
-
-    const accepted = await requestConfirmation(confirm, {
-        message: trans("Activate :count selected companies?", {
-            count: selectedCompanies.value.length,
-        }),
-        header: trans("Activate selected"),
-        icon: "pi pi-check-circle",
-        acceptLabel: trans("Activate"),
-        rejectLabel: trans("Cancel"),
-        acceptClass: "p-button-success",
-    });
-
-    if (!accepted) {
-        return;
-    }
-
+const refreshUsers = async () => {
     try {
-        await companyService.bulkActivate(
-            selectedCompanies.value.map((company) => company.id)
+        await fetchUsers();
+        showSuccessToast(trans("Users refreshed."));
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    }
+};
+
+const sendVerificationEmail = async (user) => {
+    try {
+        const response = await userService.sendVerificationEmail(user.id);
+        showSuccessToast(
+            response.message
+                || (user.email_verified_at
+                    ? trans("Verification email resent successfully.")
+                    : trans("Verification email sent successfully.")),
         );
-        selectedCompanies.value = [];
-
-        await fetchCompanies();
-        showSuccessToast(trans("Companies activated successfully."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
     }
 };
 
-// Több kijelölt cég deaktiválása egyszerre.
-const deactivateSelectedCompanies = async () => {
-    if (selectedCompanies.value.length === 0) {
-        return;
-    }
-
-    const accepted = await requestConfirmation(confirm, {
-        message: trans("Deactivate :count selected companies?", {
-            count: selectedCompanies.value.length,
-        }),
-        header: trans("Deactivate selected"),
-        icon: "pi pi-ban",
-        acceptLabel: trans("Deactivate"),
-        rejectLabel: trans("Cancel"),
-        acceptClass: "p-button-danger",
-    });
-
-    if (!accepted) {
-        return;
-    }
-
-    try {
-        await companyService.bulkDeactivate(
-            selectedCompanies.value.map((company) => company.id)
-        );
-        selectedCompanies.value = [];
-
-        await fetchCompanies();
-        showSuccessToast(trans("Companies deactivated successfully."));
-    } catch (error) {
-        showErrorToast(error?.response?.data?.message);
-    }
-};
-
-// Aktív státusz váltása a soron, majd a lista frissítése.
-const toggleCompanyActiveStatus = async (company) => {
-    try {
-        await companyService.toggleActiveStatus(company.id);
-        await fetchCompanies();
-        showSuccessToast(trans("Company status updated successfully."));
-    } catch (error) {
-        showErrorToast(error?.response?.data?.message);
-    }
-};
-
-const refreshCompanies = async () => {
-    try {
-        await fetchCompanies();
-        showSuccessToast(trans("Companies refreshed."));
-    } catch (error) {
-        showErrorToast(error?.response?.data?.message);
-    }
-};
-
-// A soronkénti műveleti menü elemei.
-const buildRowActions = (company) => [
+const buildRowActions = (user) => [
     {
         label: trans("Edit"),
         icon: "pi pi-pencil",
-        command: () => router.get(route("companies.edit", company.id)),
+        command: () => router.get(route("users.edit", user.id)),
+    },
+    {
+        label: user.email_verified_at
+            ? trans("Resend verification email")
+            : trans("Send verification email"),
+        icon: "pi pi-envelope",
+        command: () => sendVerificationEmail(user),
     },
     {
         label: trans("Delete"),
         icon: "pi pi-trash",
-        command: () => removeCompany(company),
-    },
-    {
-        label: company.is_active ? trans("Deactivate") : trans("Activate"),
-        icon: company.is_active ? "pi pi-eye-slash" : "pi pi-check-circle",
-        command: () => toggleCompanyActiveStatus(company),
+        command: () => removeUser(user),
     },
 ];
 
-// Minden táblaszűrő alaphelyzetbe állítása.
 const clearFilters = async () => {
     searchInput.value = "";
     tableFilters.value = {
-        global: {
-            value: null,
-            matchMode: "contains",
-        },
-        name: {
-            value: null,
-            matchMode: "contains",
-        },
-        email: {
-            value: null,
-            matchMode: "contains",
-        },
-        phone: {
-            value: null,
-            matchMode: "contains",
-        },
-        is_active: {
-            value: null,
-            matchMode: "equals",
-        },
+        global: { value: null, matchMode: "contains" },
+        name: { value: null, matchMode: "contains" },
+        email: { value: null, matchMode: "contains" },
+        role_id: { value: null, matchMode: "equals" },
     };
     tableState.page = 1;
-    await fetchCompanies();
+    await fetchUsers();
 };
 
-// Segédfüggvény annak eldöntésére, hogy egy oszlop látható-e.
 const isColumnVisible = (columnKey) => visibleColumnKeys.value.includes(columnKey);
 
-// Az oszlopválasztó visszaállítása az alapértelmezett oszlopokra.
 const resetVisibleColumns = () => {
     visibleColumnKeys.value = [...DEFAULT_VISIBLE_COLUMN_KEYS];
 };
 
-// Egy szűrőcímke eltávolítása az aktív szűrők sávból.
 const clearSingleFilter = async (filterKey) => {
     if (filterKey === "global") {
         isProgrammaticSearchUpdate = true;
         searchInput.value = "";
         tableFilters.value.global.value = null;
         tableState.page = 1;
-        await fetchCompanies();
+        await fetchUsers();
         isProgrammaticSearchUpdate = false;
         return;
-    } else {
-        tableFilters.value[filterKey].value = null;
     }
 
+    tableFilters.value[filterKey].value = null;
     tableState.page = 1;
-    await fetchCompanies();
+    await fetchUsers();
 };
 
-// Egy rekord szerkesztőoldalára navigál.
-const editCompany = (company) => {
-    router.get(route("companies.edit", company.id));
+const editUser = (user) => {
+    router.get(route("users.edit", user.id));
 };
 
-// Emberi olvasásra alkalmas rekordminőség címke.
-const getContactHealth = (company) => {
-    if (company.email && company.phone) {
+const roleAssignmentState = (user) => {
+    if ((user.roles_count ?? 0) > 0) {
         return {
             severity: "success",
             value: trans("Complete"),
@@ -506,7 +373,6 @@ const getContactHealth = (company) => {
     };
 };
 
-// Dátum rövid, lokalizált megjelenítése.
 const formatDateTime = (value) => {
     if (!value) {
         return trans("N/A");
@@ -523,8 +389,6 @@ const formatDateTime = (value) => {
     }).format(date);
 };
 
-// A mentett oszlopbeállítás visszaállítása a localStorage-ból.
-// Hibás vagy elavult kulcsok esetén biztonságosan visszaáll az alapállapot.
 const restoreVisibleColumns = () => {
     const savedColumns = window.localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
 
@@ -552,7 +416,9 @@ const restoreVisibleColumns = () => {
     }
 };
 
-// Az oszlopválasztás minden módosítását azonnal elmenti böngészőoldalra.
+const verificationSeverity = (value) => (value ? "success" : "secondary");
+const verificationLabel = (value) => (value ? trans("Verified") : trans("Unverified"));
+
 watch(
     visibleColumnKeys,
     (columns) => {
@@ -569,7 +435,6 @@ watch(
     { deep: true }
 );
 
-// A globális kereső debounce-olva frissíti a DataTable filter modellt.
 watch(searchInput, (value) => {
     if (isProgrammaticSearchUpdate) {
         return;
@@ -582,15 +447,14 @@ watch(searchInput, (value) => {
     searchDebounceTimer = window.setTimeout(async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
-        await fetchCompanies();
+        await fetchUsers();
     }, SEARCH_DEBOUNCE_MS);
 });
 
-// Oldalbetöltéskor visszaállítja a mentett oszlopnézetet, majd lekéri az adatokat.
 onMounted(async () => {
     restoreVisibleColumns();
     searchInput.value = tableFilters.value.global.value ?? "";
-    await fetchCompanies();
+    await fetchUsers();
 });
 
 onBeforeUnmount(() => {
@@ -601,15 +465,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <!-- Böngészőfül címének beállítása. -->
-    <Head :title="$t('Companies')" />
+    <Head :title="$t('Users')" />
 
-    <!-- Az oldal a hitelesített felhasználói layouton belül jelenik meg. -->
     <AuthenticatedLayout>
         <ConfirmDialog />
 
-        <!-- A layout fejléc slotjába kerülő oldalnév. -->
-        <template #header>{{ $t("Companies") }}</template>
+        <template #header>{{ $t("Users") }}</template>
 
         <div class="app-grid">
             <section class="app-grid md:grid-cols-3">
@@ -636,7 +497,6 @@ onBeforeUnmount(() => {
                 </Card>
             </section>
 
-            <!-- Felső információs kártya címmel, leírással és elsődleges műveletekkel. -->
             <Card class="app-card border-0">
                 <template #content>
                     <div
@@ -646,17 +506,17 @@ onBeforeUnmount(() => {
                             <div
                                 class="text-sm uppercase tracking-[0.3em] text-emerald-600"
                             >
-                                {{ $t("Directory") }}
+                                {{ $t("Access Control") }}
                             </div>
                             <h1
                                 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950"
                             >
-                                {{ $t("Company management") }}
+                                {{ $t("Manage users") }}
                             </h1>
                             <p class="mt-2 text-slate-500">
                                 {{
                                     $t(
-                                        "Manage company records with repository-backed CRUD endpoints."
+                                        "Maintain user accounts and their assigned access roles from a single admin table."
                                     )
                                 }}
                             </p>
@@ -679,7 +539,6 @@ onBeforeUnmount(() => {
                                     </div>
                                 </div>
 
-                                <!-- View options -->
                                 <div
                                     class="flex flex-col gap-2 sm:flex-row sm:items-center"
                                 >
@@ -704,17 +563,14 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
 
-                            <!-- New and Refresh -->
                             <div class="flex flex-col gap-2">
-                                <!-- New button -->
-                                <Link :href="route('companies.create')">
+                                <Link :href="route('users.create')">
                                     <Button
-                                        :label="$t('New company')"
+                                        :label="$t('Create user')"
                                         icon="pi pi-plus"
                                     />
                                 </Link>
 
-                                <!-- REFRESH -->
                                 <Button
                                     :label="$t('Refresh')"
                                     icon="pi pi-refresh"
@@ -722,8 +578,7 @@ onBeforeUnmount(() => {
                                     size="small"
                                     :disabled="loading"
                                     :loading="loading"
-                                    @click="refreshCompanies"
-                                    data-testid="companies-refresh"
+                                    @click="refreshUsers"
                                 />
                             </div>
                         </div>
@@ -732,7 +587,7 @@ onBeforeUnmount(() => {
             </Card>
 
             <Card
-                v-if="selectedCompanies.length > 0"
+                v-if="selectedUsers.length > 0"
                 class="app-card sticky top-24 z-10 border-0"
             >
                 <template #content>
@@ -744,8 +599,8 @@ onBeforeUnmount(() => {
                                 {{ $t("Selected records") }}
                             </div>
                             <div class="mt-1 text-lg font-semibold text-emerald-950">
-                                {{ selectedCompanies.length }}
-                                {{ $t("companies selected") }}
+                                {{ selectedUsers.length }}
+                                {{ $t("users selected") }}
                             </div>
                         </div>
 
@@ -755,39 +610,25 @@ onBeforeUnmount(() => {
                                 icon="pi pi-times"
                                 severity="secondary"
                                 outlined
-                                @click="selectedCompanies = []"
-                            />
-                            <Button
-                                :label="$t('Activate selected')"
-                                icon="pi pi-check"
-                                severity="success"
-                                @click="activateSelectedCompanies"
-                            />
-                            <Button
-                                :label="$t('Deactivate selected')"
-                                icon="pi pi-ban"
-                                severity="danger"
-                                outlined
-                                @click="deactivateSelectedCompanies"
+                                @click="selectedUsers = []"
                             />
                             <Button
                                 :label="$t('Delete selected')"
                                 icon="pi pi-trash"
                                 severity="danger"
-                                @click="removeSelectedCompanies"
+                                @click="removeSelectedUsers"
                             />
                         </div>
                     </div>
                 </template>
             </Card>
 
-            <!-- A céglista szerveroldali DataTable-ben jelenik meg. -->
             <Card class="app-card border-0">
                 <template #content>
                     <DataTable
-                        v-model:selection="selectedCompanies"
+                        v-model:selection="selectedUsers"
                         v-model:filters="tableFilters"
-                        :value="companies"
+                        :value="users"
                         :loading="loading"
                         lazy
                         paginator
@@ -797,14 +638,13 @@ onBeforeUnmount(() => {
                         :rows="meta.per_page"
                         :first="(meta.current_page - 1) * meta.per_page"
                         :total-records="meta.total"
-                        :global-filter-fields="['name', 'email', 'phone']"
+                        :global-filter-fields="['name', 'email', 'role_names']"
                         paginator-template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
                         :rows-per-page-options="[10, 25, 50]"
                         table-style="min-width: 60rem"
                         @page="onPage"
                         @filter="onFilter"
                     >
-                        <!-- Táblafejléc: oszlopválasztó, szűrő törlés és globális keresés. -->
                         <template #header>
                             <div
                                 class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
@@ -828,7 +668,6 @@ onBeforeUnmount(() => {
                                         @click="clearFilters"
                                     />
                                     <IconField>
-                                        <!-- A globális keresőmező ikonos burkolóeleme. -->
                                         <InputIcon>
                                             <i class="pi pi-search" />
                                         </InputIcon>
@@ -848,13 +687,10 @@ onBeforeUnmount(() => {
                             </span>
                         </template>
 
-                        <!-- Üres állapot, ha a jelenlegi szűrésre nincs találat. -->
                         <template #empty>
                             <div class="py-10 text-center">
                                 <div class="text-lg font-medium text-slate-700">
-                                    {{
-                                        $t("No companies found for the current filters.")
-                                    }}
+                                    {{ $t("No users found for the current filters.") }}
                                 </div>
                                 <div class="mt-2 text-sm text-slate-500">
                                     {{
@@ -876,17 +712,15 @@ onBeforeUnmount(() => {
 
                         <template #loading>
                             <div class="py-10 text-center text-slate-500">
-                                {{ $t("Loading companies...") }}
+                                {{ $t("Loading users...") }}
                             </div>
                         </template>
 
-                        <!-- Tömeges kijelöléshez szükséges fix checkbox oszlop. -->
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
-                        <!-- Cégnév oszlop saját szűrőmezővel és kiegészítő címinformációval. -->
                         <Column
                             field="name"
-                            :header="$t('Company name')"
+                            :header="$t('User name')"
                             sortable
                             v-if="isColumnVisible('name')"
                         >
@@ -894,18 +728,18 @@ onBeforeUnmount(() => {
                                 <InputText
                                     v-model="filterModel.value"
                                     class="w-full"
-                                    :placeholder="$t('Company name')"
+                                    :placeholder="$t('User name')"
                                     @input="filterCallback()"
                                 />
                             </template>
                             <template #body="{ data }">
                                 <div
                                     class="cursor-pointer py-1"
-                                    @dblclick="editCompany(data)"
+                                    @dblclick="editUser(data)"
                                 >
                                     <div class="font-medium text-slate-900">
                                         <Link
-                                            :href="route('companies.edit', data.id)"
+                                            :href="route('users.edit', data.id)"
                                             class="inline-flex items-center gap-2 transition hover:text-emerald-700"
                                         >
                                             {{ data.name }}
@@ -915,19 +749,18 @@ onBeforeUnmount(() => {
                                         </Link>
                                     </div>
                                     <div class="mt-1 text-sm text-slate-500">
-                                        {{ data.address || $t("No address added") }}
+                                        {{ data.email }}
                                     </div>
                                     <div class="mt-2">
                                         <Tag
-                                            :severity="getContactHealth(data).severity"
-                                            :value="getContactHealth(data).value"
+                                            :severity="roleAssignmentState(data).severity"
+                                            :value="roleAssignmentState(data).value"
                                         />
                                     </div>
                                 </div>
                             </template>
                         </Column>
 
-                        <!-- E-mail oszlop saját szűrőmezővel. -->
                         <Column
                             field="email"
                             :header="$t('Email')"
@@ -943,73 +776,61 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{
-                                    data.email || $t("N/A")
-                                }}</span>
-                            </template>
-                        </Column>
-
-                        <!-- Telefonszám oszlop saját szűrőmezővel. -->
-                        <Column
-                            field="phone"
-                            :header="$t('Phone')"
-                            sortable
-                            v-if="isColumnVisible('phone')"
-                        >
-                            <template #filter="{ filterModel, filterCallback }">
-                                <InputText
-                                    v-model="filterModel.value"
-                                    class="w-full"
-                                    :placeholder="$t('Phone')"
-                                    @input="filterCallback()"
-                                />
-                            </template>
-                            <template #body="{ data }">
-                                <span class="text-slate-600">{{
-                                    data.phone || $t("N/A")
-                                }}</span>
-                            </template>
-                        </Column>
-
-                        <Column
-                            field="employees_count"
-                            :header="$t('Employees')"
-                            sortable
-                            v-if="isColumnVisible('employees_count')"
-                        >
-                            <template #body="{ data }">
                                 <span class="text-slate-600">
-                                    {{ data.employees_count }}
+                                    {{ data.email || $t("N/A") }}
                                 </span>
                             </template>
                         </Column>
 
-                        <!-- Státusz oszlop select alapú szűrővel. -->
                         <Column
-                            field="is_active"
-                            :header="$t('Status')"
+                            field="roles_count"
+                            :header="$t('Assigned roles')"
                             sortable
-                            v-if="isColumnVisible('is_active')"
+                            v-if="isColumnVisible('roles_count')"
                         >
                             <template #filter="{ filterModel, filterCallback }">
                                 <Select
                                     v-model="filterModel.value"
-                                    :options="statusOptions"
+                                    :options="roleFilterOptions"
                                     option-label="label"
                                     option-value="value"
                                     class="w-full min-w-40"
                                     show-clear
-                                    :placeholder="$t('All statuses')"
+                                    :placeholder="$t('All roles')"
                                     @change="filterCallback()"
                                 />
                             </template>
                             <template #body="{ data }">
-                                <Tag
-                                    :severity="data.is_active ? 'success' : 'secondary'"
-                                    :value="
-                                        data.is_active ? $t('Active') : $t('Inactive')
-                                    "
-                                />
+                                <div class="space-y-1">
+                                    <div class="text-slate-600">
+                                        {{ data.roles_count }}
+                                    </div>
+                                    <div class="text-xs text-slate-500">
+                                        {{
+                                            data.role_names?.join(", ")
+                                            || $t("No roles assigned")
+                                        }}
+                                    </div>
+                                </div>
+                            </template>
+                        </Column>
+
+                        <Column
+                            field="email_verified_at"
+                            :header="$t('Email verified')"
+                            sortable
+                            v-if="isColumnVisible('email_verified_at')"
+                        >
+                            <template #body="{ data }">
+                                <div class="flex flex-col gap-2">
+                                    <Tag
+                                        :severity="verificationSeverity(data.email_verified_at)"
+                                        :value="verificationLabel(data.email_verified_at)"
+                                    />
+                                    <span class="text-xs text-slate-500">
+                                        {{ formatDateTime(data.email_verified_at) }}
+                                    </span>
+                                </div>
                             </template>
                         </Column>
 
@@ -1026,7 +847,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Soronkénti műveletek fix jobb oldali oszlopban. -->
                         <Column
                             :header="$t('Actions')"
                             header-class="text-right"

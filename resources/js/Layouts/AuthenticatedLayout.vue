@@ -75,6 +75,13 @@ const navigationSections = computed(() => {
                     permission: 'roles.viewAny',
                 },
                 {
+                    label: trans('Users'),
+                    icon: 'pi pi-id-card',
+                    route: 'users.index',
+                    activeRoute: 'users.*',
+                    permission: 'users.viewAny',
+                },
+                {
                     label: trans('Permissions'),
                     icon: 'pi pi-key',
                     route: 'permissions.index',

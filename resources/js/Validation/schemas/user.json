@@ -1,0 +1,38 @@
+{
+    "fields": {
+        "id": {
+            "nullable": true,
+            "types": ["integer"]
+        },
+        "name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255
+        },
+        "email": {
+            "required": true,
+            "types": ["string"],
+            "format": "email",
+            "max": 255,
+            "unique": {
+                "table": "users",
+                "column": "email",
+                "ignoreContextKey": "user"
+            }
+        },
+        "password": {
+            "nullable": true,
+            "types": ["string"],
+            "max": 255
+        },
+        "password_confirmation": {
+            "nullable": true,
+            "types": ["string"],
+            "max": 255
+        },
+        "role_ids": {
+            "nullable": true,
+            "types": ["array"]
+        }
+    }
+}

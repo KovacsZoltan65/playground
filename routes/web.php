@@ -7,6 +7,7 @@ require __DIR__ . '/companies.php';
 require __DIR__ . '/employees.php';
 require __DIR__ . '/permissions.php';
 require __DIR__ . '/roles.php';
+require __DIR__ . '/users.php';
 require __DIR__ . '/user-temporary-permissions.php';
 require __DIR__ . '/usage-tips.php';
 require __DIR__ . '/profile.php';

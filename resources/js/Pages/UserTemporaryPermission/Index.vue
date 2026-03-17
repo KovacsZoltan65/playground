@@ -43,6 +43,7 @@ const loading = ref(false);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
+let isProgrammaticSearchUpdate = false;
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -90,6 +91,12 @@ const visibleColumnsSummary = computed(() => {
     });
 });
 
+const selectedColumnsLabel = computed(() =>
+    trans(":count columns visible", {
+        count: visibleColumnKeys.value.length,
+    })
+);
+
 const statusOptions = computed(() => {
     currentLocale.value;
 
@@ -112,12 +119,16 @@ const quickStats = computed(() => {
         },
         {
             label: trans("Active on this page"),
-            value: assignments.value.filter((assignment) => assignment.status === "active").length,
+            value: assignments.value.filter(
+                (assignment) => assignment.status === "active"
+            ).length,
             caption: trans("Assignments currently effective"),
         },
         {
             label: trans("Expired on this page"),
-            value: assignments.value.filter((assignment) => assignment.status === "expired").length,
+            value: assignments.value.filter(
+                (assignment) => assignment.status === "expired"
+            ).length,
             caption: trans("Assignments no longer effective"),
         },
     ];
@@ -136,22 +147,28 @@ const activeFilters = computed(() => {
     }
 
     if (tableFilters.value.user_id.value) {
-        const selectedUser = props.userOptions.find((option) => option.value === tableFilters.value.user_id.value);
+        const selectedUser = props.userOptions.find(
+            (option) => option.value === tableFilters.value.user_id.value
+        );
 
         filters.push({
             key: "user_id",
-            label: `${trans("User")}: ${selectedUser?.label ?? tableFilters.value.user_id.value}`,
+            label: `${trans("User")}: ${
+                selectedUser?.label ?? tableFilters.value.user_id.value
+            }`,
         });
     }
 
     if (tableFilters.value.permission_id.value) {
         const selectedPermission = props.permissionOptions.find(
-            (option) => option.value === tableFilters.value.permission_id.value,
+            (option) => option.value === tableFilters.value.permission_id.value
         );
 
         filters.push({
             key: "permission_id",
-            label: `${trans("Permission")}: ${selectedPermission?.label ?? tableFilters.value.permission_id.value}`,
+            label: `${trans("Permission")}: ${
+                selectedPermission?.label ?? tableFilters.value.permission_id.value
+            }`,
         });
     }
 
@@ -217,7 +234,9 @@ const onFilter = async (event) => {
 
 const removeAssignment = async (assignment) => {
     const accepted = await requestConfirmation(confirm, {
-        message: trans("Delete temporary permission for :name?", { name: assignment.user_name }),
+        message: trans("Delete temporary permission for :name?", {
+            name: assignment.user_name,
+        }),
         header: trans("Delete"),
         icon: "pi pi-exclamation-triangle",
         acceptLabel: trans("Delete"),
@@ -265,7 +284,7 @@ const removeSelectedAssignments = async () => {
 
     try {
         await userTemporaryPermissionService.bulkDestroy(
-            selectedAssignments.value.map((assignment) => assignment.id),
+            selectedAssignments.value.map((assignment) => assignment.id)
         );
         selectedAssignments.value = [];
 
@@ -293,7 +312,8 @@ const buildRowActions = (assignment) => [
     {
         label: trans("Edit"),
         icon: "pi pi-pencil",
-        command: () => router.get(route("user-temporary-permissions.edit", assignment.id)),
+        command: () =>
+            router.get(route("user-temporary-permissions.edit", assignment.id)),
     },
     {
         label: trans("Delete"),
@@ -314,11 +334,22 @@ const clearFilters = async () => {
     await fetchAssignments();
 };
 
+const resetVisibleColumns = () => {
+    visibleColumnKeys.value = [...DEFAULT_VISIBLE_COLUMN_KEYS];
+};
+
 const clearSingleFilter = async (key) => {
     if (key === "global") {
+        isProgrammaticSearchUpdate = true;
         searchInput.value = "";
         tableFilters.value.global.value = null;
-    } else if (tableFilters.value[key]) {
+        tableState.page = 1;
+        await fetchAssignments();
+        isProgrammaticSearchUpdate = false;
+        return;
+    }
+
+    if (tableFilters.value[key]) {
         tableFilters.value[key].value = null;
     }
 
@@ -336,7 +367,7 @@ const applyVisibleColumns = (keys) => {
     }
 
     visibleColumnKeys.value = nextKeys.filter((key) =>
-        availableColumns.value.some((column) => column.value === key),
+        availableColumns.value.some((column) => column.value === key)
     );
 };
 
@@ -358,13 +389,6 @@ const restoreVisibleColumns = () => {
     }
 };
 
-const persistVisibleColumns = () => {
-    window.localStorage.setItem(
-        COLUMN_VISIBILITY_STORAGE_KEY,
-        JSON.stringify(visibleColumnKeys.value),
-    );
-};
-
 const formatDateTime = (value) => {
     if (!value) {
         return trans("N/A");
@@ -376,20 +400,41 @@ const formatDateTime = (value) => {
     }).format(new Date(value));
 };
 
-const statusSeverity = (status) => ({
-    active: "success",
-    upcoming: "info",
-    expired: "secondary",
-}[status] ?? "secondary");
+const statusSeverity = (status) =>
+    ({
+        active: "success",
+        upcoming: "info",
+        expired: "secondary",
+    }[status] ?? "secondary");
 
 const statusLabel = (status) =>
     ({
         active: trans("Active"),
         upcoming: trans("Upcoming"),
         expired: trans("Expired"),
-    })[status] ?? status;
+    }[status] ?? status);
+
+watch(
+    visibleColumnKeys,
+    (columns) => {
+        if (columns.length === 0) {
+            visibleColumnKeys.value = [MINIMUM_VISIBLE_COLUMN_KEY];
+            return;
+        }
+
+        window.localStorage.setItem(
+            COLUMN_VISIBILITY_STORAGE_KEY,
+            JSON.stringify(columns)
+        );
+    },
+    { deep: true }
+);
 
 watch(searchInput, (value) => {
+    if (isProgrammaticSearchUpdate) {
+        return;
+    }
+
     if (searchDebounceTimer) {
         window.clearTimeout(searchDebounceTimer);
     }
@@ -401,16 +446,9 @@ watch(searchInput, (value) => {
     }, SEARCH_DEBOUNCE_MS);
 });
 
-watch(
-    visibleColumnKeys,
-    () => {
-        persistVisibleColumns();
-    },
-    { deep: true },
-);
-
 onMounted(async () => {
     restoreVisibleColumns();
+    searchInput.value = tableFilters.value.global.value ?? "";
     await fetchAssignments();
 });
 
@@ -425,81 +463,168 @@ onBeforeUnmount(() => {
     <Head :title="$t('Temporary Permissions')" />
 
     <AuthenticatedLayout>
+        <ConfirmDialog />
+
         <template #header>{{ $t("Temporary Permissions") }}</template>
 
-        <div class="space-y-6">
-            <ConfirmDialog />
-
-            <div class="grid gap-4 xl:grid-cols-3">
-                <Card v-for="stat in quickStats" :key="stat.label" class="app-card border-0">
+        <div class="app-grid">
+            <section class="app-grid md:grid-cols-3">
+                <Card
+                    v-for="stat in quickStats"
+                    :key="stat.label"
+                    class="app-card border-0"
+                >
                     <template #content>
-                        <div class="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">
-                            {{ stat.label }}
-                        </div>
-                        <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-                            {{ stat.value }}
-                        </div>
-                        <div class="mt-2 text-sm text-slate-500">
-                            {{ stat.caption }}
+                        <div class="rounded-[1.75rem] bg-slate-50 p-5">
+                            <div class="text-sm font-medium text-slate-500">
+                                {{ stat.label }}
+                            </div>
+                            <div
+                                class="mt-3 text-3xl font-semibold tracking-tight text-slate-950"
+                            >
+                                {{ stat.value }}
+                            </div>
+                            <div class="mt-2 text-sm text-slate-500">
+                                {{ stat.caption }}
+                            </div>
                         </div>
                     </template>
                 </Card>
-            </div>
+            </section>
 
             <Card class="app-card border-0">
                 <template #content>
-                    <div class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div
+                        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                    >
                         <div>
-                            <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">
+                            <div
+                                class="text-sm uppercase tracking-[0.3em] text-emerald-600"
+                            >
                                 {{ $t("Access Control") }}
                             </div>
-                            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                            <h1
+                                class="mt-2 text-3xl font-semibold tracking-tight text-slate-950"
+                            >
                                 {{ $t("Manage temporary permissions") }}
                             </h1>
-                            <p class="mt-2 max-w-3xl text-slate-500">
-                                {{ $t("Grant direct user permissions that activate only within a defined time window.") }}
+                            <p class="mt-2 text-slate-500">
+                                {{
+                                    $t(
+                                        "Grant direct user permissions that activate only within a defined time window."
+                                    )
+                                }}
                             </p>
+                        </div>
+
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-end"
+                        >
+                            <div
+                                class="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200/80 bg-slate-50 px-4 py-3 sm:max-w-[26rem]"
+                            >
+                                <div class="flex items-center justify-between gap-3">
+                                    <div
+                                        class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500"
+                                    >
+                                        {{ $t("View options") }}
+                                    </div>
+                                    <div class="text-xs font-medium text-slate-500">
+                                        {{ visibleColumnsSummary }}
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                >
+                                    <MultiSelect
+                                        v-model="visibleColumnKeys"
+                                        :options="availableColumns"
+                                        option-label="label"
+                                        option-value="value"
+                                        :placeholder="$t('Visible columns')"
+                                        :selected-items-label="selectedColumnsLabel"
+                                        :max-selected-labels="0"
+                                        class="w-full"
+                                        @update:model-value="applyVisibleColumns"
+                                    />
+                                    <Button
+                                        type="button"
+                                        icon="pi pi-refresh"
+                                        severity="secondary"
+                                        outlined
+                                        :label="$t('Reset')"
+                                        @click="resetVisibleColumns"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <Link
+                                    :href="
+                                        route('user-temporary-permissions.create')
+                                    "
+                                >
+                                    <Button
+                                        :label="$t('Create temporary permission')"
+                                        icon="pi pi-plus"
+                                    />
+                                </Link>
+
+                                <Button
+                                    :label="$t('Refresh')"
+                                    icon="pi pi-refresh"
+                                    severity="secondary"
+                                    size="small"
+                                    :disabled="loading"
+                                    :loading="loading"
+                                    @click="refreshAssignments"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </Card>
+
+            <Card
+                v-if="selectedAssignments.length > 0"
+                class="app-card sticky top-24 z-10 border-0"
+            >
+                <template #content>
+                    <div
+                        class="flex flex-col gap-4 rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between"
+                    >
+                        <div>
+                            <div class="text-sm font-medium text-emerald-700">
+                                {{ $t("Selected records") }}
+                            </div>
+                            <div class="mt-1 text-lg font-semibold text-emerald-950">
+                                {{ selectedAssignments.length }}
+                                {{ $t("temporary permissions selected") }}
+                            </div>
                         </div>
 
                         <div class="flex flex-wrap gap-3">
                             <Button
-                                :label="$t('Refresh')"
-                                icon="pi pi-refresh"
+                                :label="$t('Clear selection')"
+                                icon="pi pi-times"
                                 severity="secondary"
                                 outlined
-                                @click="refreshAssignments"
+                                @click="selectedAssignments = []"
                             />
-                            <Link :href="route('user-temporary-permissions.create')">
-                                <Button :label="$t('Create temporary permission')" icon="pi pi-plus" />
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div class="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                        <div class="flex flex-wrap gap-3">
                             <Button
                                 :label="$t('Delete selected')"
                                 icon="pi pi-trash"
                                 severity="danger"
-                                outlined
-                                :disabled="selectedAssignments.length === 0"
                                 @click="removeSelectedAssignments"
                             />
                         </div>
-
-                        <MultiSelect
-                            v-model="visibleColumnKeys"
-                            :options="availableColumns"
-                            option-label="label"
-                            option-value="value"
-                            class="w-full xl:w-80"
-                            :max-selected-labels="0"
-                            :selected-items-label="visibleColumnsSummary"
-                            :placeholder="$t('Visible columns')"
-                            @update:model-value="applyVisibleColumns"
-                        />
                     </div>
+                </template>
+            </Card>
 
+            <Card class="app-card border-0">
+                <template #content>
                     <DataTable
                         v-model:selection="selectedAssignments"
                         v-model:filters="tableFilters"
@@ -521,11 +646,19 @@ onBeforeUnmount(() => {
                         @filter="onFilter"
                     >
                         <template #header>
-                            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div
+                                class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                            >
                                 <div class="text-sm text-slate-500">
-                                    {{ $t("Repository-backed CRUD with PrimeVue components.") }}
+                                    {{
+                                        $t(
+                                            "Repository-backed CRUD with PrimeVue components."
+                                        )
+                                    }}
                                 </div>
-                                <div class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row">
+                                <div
+                                    class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row"
+                                >
                                     <Button
                                         type="button"
                                         icon="pi pi-filter-slash"
@@ -557,10 +690,18 @@ onBeforeUnmount(() => {
                         <template #empty>
                             <div class="py-10 text-center">
                                 <div class="text-lg font-medium text-slate-700">
-                                    {{ $t("No temporary permissions found for the current filters.") }}
+                                    {{
+                                        $t(
+                                            "No temporary permissions found for the current filters."
+                                        )
+                                    }}
                                 </div>
                                 <div class="mt-2 text-sm text-slate-500">
-                                    {{ $t("Try clearing filters or broadening your search.") }}
+                                    {{
+                                        $t(
+                                            "Try clearing filters or broadening your search."
+                                        )
+                                    }}
                                 </div>
                                 <Button
                                     class="mt-4"
@@ -581,7 +722,12 @@ onBeforeUnmount(() => {
 
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
-                        <Column field="user_name" :header="$t('User')" sortable v-if="isColumnVisible('user_name')">
+                        <Column
+                            field="user_name"
+                            :header="$t('User')"
+                            sortable
+                            v-if="isColumnVisible('user_name')"
+                        >
                             <template #filter="{ filterModel, filterCallback }">
                                 <Select
                                     v-model="filterModel.value"
@@ -599,11 +745,18 @@ onBeforeUnmount(() => {
                                 <div class="py-1">
                                     <div class="font-medium text-slate-900">
                                         <Link
-                                            :href="route('user-temporary-permissions.edit', data.id)"
+                                            :href="
+                                                route(
+                                                    'user-temporary-permissions.edit',
+                                                    data.id
+                                                )
+                                            "
                                             class="inline-flex items-center gap-2 transition hover:text-emerald-700"
                                         >
                                             {{ data.user_name }}
-                                            <i class="pi pi-arrow-up-right text-xs text-emerald-600" />
+                                            <i
+                                                class="pi pi-arrow-up-right text-xs text-emerald-600"
+                                            />
                                         </Link>
                                     </div>
                                     <div class="mt-1 text-sm text-slate-500">
@@ -633,11 +786,18 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <span class="text-slate-700">{{ data.permission_name }}</span>
+                                <span class="text-slate-700">
+                                    {{ data.permission_name }}
+                                </span>
                             </template>
                         </Column>
 
-                        <Column field="status" :header="$t('Status')" sortable v-if="isColumnVisible('status')">
+                        <Column
+                            field="status"
+                            :header="$t('Status')"
+                            sortable
+                            v-if="isColumnVisible('status')"
+                        >
                             <template #filter="{ filterModel, filterCallback }">
                                 <Select
                                     v-model="filterModel.value"
@@ -651,36 +811,67 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <Tag :severity="statusSeverity(data.status)" :value="statusLabel(data.status)" />
+                                <Tag
+                                    :severity="statusSeverity(data.status)"
+                                    :value="statusLabel(data.status)"
+                                />
                             </template>
                         </Column>
 
-                        <Column field="starts_at" :header="$t('Starts at')" sortable v-if="isColumnVisible('starts_at')">
+                        <Column
+                            field="starts_at"
+                            :header="$t('Starts at')"
+                            sortable
+                            v-if="isColumnVisible('starts_at')"
+                        >
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ formatDateTime(data.starts_at) }}</span>
+                                <span class="text-slate-600">
+                                    {{ formatDateTime(data.starts_at) }}
+                                </span>
                             </template>
                         </Column>
 
-                        <Column field="ends_at" :header="$t('Ends at')" sortable v-if="isColumnVisible('ends_at')">
+                        <Column
+                            field="ends_at"
+                            :header="$t('Ends at')"
+                            sortable
+                            v-if="isColumnVisible('ends_at')"
+                        >
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ formatDateTime(data.ends_at) }}</span>
+                                <span class="text-slate-600">
+                                    {{ formatDateTime(data.ends_at) }}
+                                </span>
                             </template>
                         </Column>
 
-                        <Column field="updated_at" :header="$t('Last updated')" sortable v-if="isColumnVisible('updated_at')">
+                        <Column
+                            field="updated_at"
+                            :header="$t('Last updated')"
+                            sortable
+                            v-if="isColumnVisible('updated_at')"
+                        >
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ formatDateTime(data.updated_at) }}</span>
+                                <span class="text-slate-600">
+                                    {{ formatDateTime(data.updated_at) }}
+                                </span>
                             </template>
                         </Column>
 
-                        <Column :header="$t('Actions')" header-class="text-right" body-class="text-right">
+                        <Column
+                            :header="$t('Actions')"
+                            header-class="text-right"
+                            body-class="text-right"
+                        >
                             <template #body="{ data }">
                                 <RowActionMenu :items="buildRowActions(data)" />
                             </template>
                         </Column>
                     </DataTable>
 
-                    <div v-if="activeFilters.length > 0" class="mt-5 flex flex-wrap gap-2">
+                    <div
+                        v-if="activeFilters.length > 0"
+                        class="mt-5 flex flex-wrap gap-2"
+                    >
                         <div
                             v-for="filter in activeFilters"
                             :key="filter.key"
@@ -695,7 +886,12 @@ onBeforeUnmount(() => {
                                 <i class="pi pi-times text-xs" />
                             </button>
                         </div>
-                        <Button :label="$t('Clear all filters')" icon="pi pi-times" text @click="clearFilters" />
+                        <Button
+                            :label="$t('Clear all filters')"
+                            icon="pi pi-times"
+                            text
+                            @click="clearFilters"
+                        />
                     </div>
                 </template>
             </Card>
