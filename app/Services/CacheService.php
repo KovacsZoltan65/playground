@@ -9,6 +9,7 @@ use DateInterval;
 use DateTimeInterface;
 use Illuminate\Cache\RedisStore;
 use Illuminate\Cache\TaggableStore;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\PermissionRegistrar as SpatiePermissionRegistrar;
@@ -23,7 +24,7 @@ class CacheService
             Cache::tags([$tag])->put($cacheKey, $value, $ttl);
         } else {
             Cache::put($cacheKey, $value, $ttl);
-            $this->storeKey($tag, $cacheKey);
+            $this->storeKey($tag, $cacheKey, $ttl);
         }
     }
 
@@ -46,7 +47,7 @@ class CacheService
 
         /** @var TCacheValue $value */
         $value = Cache::remember($cacheKey, $ttl, $callback);
-        $this->storeKey($tag, $cacheKey);
+        $this->storeKey($tag, $cacheKey, $ttl);
 
         return $value;
     }
@@ -59,9 +60,7 @@ class CacheService
             return;
         }
 
-        /** @var array<int,string> $keys */
-        $keys = Cache::get("{$tag}_keys", []);
-        foreach ($keys as $key) {
+        foreach ($this->trackedKeys($tag) as $key) {
             Cache::forget($key);
         }
         Cache::forget("{$tag}_keys");
@@ -154,13 +153,68 @@ class CacheService
         Log::warning('Cache driver does not support pattern-based deletion.');
     }
 
-    protected function storeKey(string $tag, string $key): void
+    protected function storeKey(string $tag, string $key, DateTimeInterface|DateInterval|int $ttl): void
     {
-        /** @var array<int,string> $keys */
-        $keys = Cache::get("{$tag}_keys", []);
-        if (! in_array($key, $keys, true)) {
-            $keys[] = $key;
-            Cache::put("{$tag}_keys", $keys, 3600);
+        $keys = $this->trackedKeysWithExpiry($tag);
+        $keys[$key] = $this->resolveExpiryTimestamp($ttl);
+
+        // The index itself is permanent; each tracked key carries its own expiry.
+        Cache::forever("{$tag}_keys", $keys);
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    protected function trackedKeys(string $tag): array
+    {
+        return array_keys($this->trackedKeysWithExpiry($tag));
+    }
+
+    /**
+     * @return array<string,int|null>
+     */
+    protected function trackedKeysWithExpiry(string $tag): array
+    {
+        /** @var mixed $storedKeys */
+        $storedKeys = Cache::get("{$tag}_keys", []);
+
+        if (! is_array($storedKeys)) {
+            return [];
         }
+
+        $now = Carbon::now()->getTimestamp();
+        $normalizedKeys = [];
+
+        foreach ($storedKeys as $index => $value) {
+            if (is_int($index) && is_string($value)) {
+                $normalizedKeys[$value] = null;
+                continue;
+            }
+
+            if (! is_string($index)) {
+                continue;
+            }
+
+            if ($value !== null && (! is_int($value) || $value < $now)) {
+                continue;
+            }
+
+            $normalizedKeys[$index] = $value;
+        }
+
+        return $normalizedKeys;
+    }
+
+    protected function resolveExpiryTimestamp(DateTimeInterface|DateInterval|int $ttl): ?int
+    {
+        if ($ttl instanceof DateTimeInterface) {
+            return Carbon::instance($ttl)->getTimestamp();
+        }
+
+        if ($ttl instanceof DateInterval) {
+            return Carbon::now()->add($ttl)->getTimestamp();
+        }
+
+        return Carbon::now()->addSeconds($ttl)->getTimestamp();
     }
 }

@@ -39,9 +39,9 @@ class CompanyRepository implements CompanyRepositoryInterface
 
         return $this->cacheService->remember(
             $this->companiesCacheTag(),
-            $this->buildFetchCacheKey($filters, $perPage, $page),
+            $this->buildPaginateCacheKey($filters, $perPage, $page),
             $queryCallback,
-            $this->fetchCacheTtlInSeconds(),
+            $this->paginateCacheTtlInSeconds(),
         );
     }
 
@@ -49,7 +49,7 @@ class CompanyRepository implements CompanyRepositoryInterface
     {
         $company = Company::query()->create($attributes);
 
-        $this->flushFetchCache();
+        $this->flushListCache();
 
         return $company;
     }
@@ -58,7 +58,7 @@ class CompanyRepository implements CompanyRepositoryInterface
     {
         $company->update($attributes);
 
-        $this->flushFetchCache();
+        $this->flushListCache();
 
         return $company->refresh();
     }
@@ -69,7 +69,7 @@ class CompanyRepository implements CompanyRepositoryInterface
             'is_active' => ! $company->is_active,
         ]);
 
-        $this->flushFetchCache();
+        $this->flushListCache();
 
         return $company->refresh();
     }
@@ -79,7 +79,7 @@ class CompanyRepository implements CompanyRepositoryInterface
         $deleted = (bool) $company->delete();
 
         if ($deleted) {
-            $this->flushFetchCache();
+            $this->flushListCache();
         }
 
         return $deleted;
@@ -92,7 +92,7 @@ class CompanyRepository implements CompanyRepositoryInterface
             ->delete();
 
         if ($deletedCount > 0) {
-            $this->flushFetchCache();
+            $this->flushListCache();
         }
 
         return $deletedCount;
@@ -150,7 +150,7 @@ class CompanyRepository implements CompanyRepositoryInterface
         ], fn ($value) => $value !== null && $value !== '');
     }
 
-    private function buildFetchCacheKey(array $filters, int $perPage, int $page): string
+    private function buildPaginateCacheKey(array $filters, int $perPage, int $page): string
     {
         $normalizedFilters = [
             'global' => $filters['global'] ?? null,
@@ -169,12 +169,12 @@ class CompanyRepository implements CompanyRepositoryInterface
         return 'companies.fetch.'.sha1((string) $payload);
     }
 
-    private function fetchCacheTtlInSeconds(): int
+    private function paginateCacheTtlInSeconds(): int
     {
         return max((int) config('cache.companies_ttl', 300), 1);
     }
 
-    private function flushFetchCache(): void
+    private function flushListCache(): void
     {
         $this->cacheService->forgetAll($this->companiesCacheTag());
     }

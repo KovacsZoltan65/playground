@@ -48,8 +48,7 @@ class Company extends Model
 
     public static function getTag(): string
     {
-        //return (new self())->logName;
-        return self::$logName;
+        return (new self())->logName;
     }
 
     public function getActivitylogOptions(): LogOptions

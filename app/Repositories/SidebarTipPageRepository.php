@@ -40,7 +40,7 @@ class SidebarTipPageRepository implements SidebarTipPageRepositoryInterface
             $this->sidebarTipPagesCacheTag(),
             $this->buildPaginateCacheKey($filters, $perPage, $page),
             $queryCallback,
-            $this->fetchCacheTtlInSeconds(),
+            $this->cacheTtlInSeconds(),
         );
     }
 
@@ -61,7 +61,7 @@ class SidebarTipPageRepository implements SidebarTipPageRepositoryInterface
                     ->orderBy('sort_order')
                     ->orderBy('id')])
                 ->first(),
-            $this->fetchCacheTtlInSeconds(),
+            $this->cacheTtlInSeconds(),
         );
     }
 
@@ -167,7 +167,7 @@ class SidebarTipPageRepository implements SidebarTipPageRepositoryInterface
         return 'sidebar_tip_pages.component.'.sha1($pageComponent);
     }
 
-    private function fetchCacheTtlInSeconds(): int
+    private function cacheTtlInSeconds(): int
     {
         return max((int) config('cache.sidebar_tip_pages_ttl', 300), 1);
     }

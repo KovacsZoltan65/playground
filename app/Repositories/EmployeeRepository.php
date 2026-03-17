@@ -48,9 +48,9 @@ class EmployeeRepository implements EmployeeRepositoryInterface
 
         return $this->cacheService->remember(
             $this->employeesCacheTag(),
-            $this->buildFetchCacheKey($filters, $perPage, $page),
+            $this->buildPaginateCacheKey($filters, $perPage, $page),
             $queryCallback,
-            $this->fetchCacheTtlInSeconds(),
+            $this->paginateCacheTtlInSeconds(),
         );
     }
 
@@ -58,7 +58,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     {
         $employee = Employee::query()->create($attributes);
 
-        $this->flushFetchCache();
+        $this->flushListCache();
 
         return $employee;
     }
@@ -67,7 +67,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     {
         $employee->update($attributes);
 
-        $this->flushFetchCache();
+        $this->flushListCache();
 
         return $employee->refresh()->load('company:id,name');
     }
@@ -78,7 +78,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             'active' => ! $employee->active,
         ]);
 
-        $this->flushFetchCache();
+        $this->flushListCache();
 
         return $employee->refresh()->load('company:id,name');
     }
@@ -88,7 +88,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
         $deleted = (bool) $employee->delete();
 
         if ($deleted) {
-            $this->flushFetchCache();
+            $this->flushListCache();
         }
 
         return $deleted;
@@ -101,7 +101,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
             ->delete();
 
         if ($deletedCount > 0) {
-            $this->flushFetchCache();
+            $this->flushListCache();
         }
 
         return $deletedCount;
@@ -146,7 +146,7 @@ class EmployeeRepository implements EmployeeRepositoryInterface
         ], fn ($value) => $value !== null && $value !== '');
     }
 
-    private function buildFetchCacheKey(array $filters, int $perPage, int $page): string
+    private function buildPaginateCacheKey(array $filters, int $perPage, int $page): string
     {
         $payload = json_encode([
             'filters' => [
@@ -165,12 +165,12 @@ class EmployeeRepository implements EmployeeRepositoryInterface
         return 'employees.paginate.'.sha1((string) $payload);
     }
 
-    private function fetchCacheTtlInSeconds(): int
+    private function paginateCacheTtlInSeconds(): int
     {
         return max((int) config('cache.employees_ttl', 300), 1);
     }
 
-    private function flushFetchCache(): void
+    private function flushListCache(): void
     {
         $this->cacheService->forgetAll($this->employeesCacheTag());
     }

@@ -7,11 +7,13 @@ use App\Support\Permissions\Roles;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Cache::flush();
     app(PermissionRegistrar::class)->forgetCachedPermissions();
     $this->seed([
         PermissionSeeder::class,
@@ -40,6 +42,54 @@ it('allows authenticated users to list employees through the json endpoint', fun
     $response
         ->assertOk()
         ->assertJsonCount(3, 'data');
+});
+
+it('lists employees without stale cache when employee caching is disabled', function () {
+    config()->set('cache.enable_employees', false);
+
+    Employee::factory()->create([
+        'name' => 'Alice Example',
+    ]);
+
+    $user = employeeUserWithRole(Roles::USER);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    Employee::factory()->create([
+        'name' => 'Bob Example',
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+});
+
+it('returns the same employee list result on repeated requests when employee caching is enabled', function () {
+    config()->set('cache.enable_employees', true);
+
+    Employee::factory()->create([
+        'name' => 'Alice Example',
+    ]);
+
+    $user = employeeUserWithRole(Roles::USER);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    Employee::factory()->create([
+        'name' => 'Bob Example',
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
 });
 
 it('filters employees by company and status', function () {
@@ -84,6 +134,122 @@ it('sorts employees by name descending', function () {
     $response
         ->assertOk()
         ->assertJsonPath('data.0.name', 'Zoe Example');
+});
+
+it('invalidates cached employee lists after creating an employee', function () {
+    config()->set('cache.enable_employees', true);
+
+    $company = Company::factory()->create(['name' => 'Acme']);
+    Employee::factory()->create([
+        'company_id' => $company->id,
+        'name' => 'Alice Example',
+    ]);
+
+    $user = employeeUserWithRole(Roles::HR);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    $this->actingAs($user)
+        ->postJson(route('employees.store'), [
+            'company_id' => $company->id,
+            'name' => 'Bob Example',
+            'email' => 'bob@example.com',
+            'active' => true,
+        ])
+        ->assertCreated();
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+});
+
+it('invalidates cached employee lists after updating an employee', function () {
+    config()->set('cache.enable_employees', true);
+
+    $employee = Employee::factory()->create([
+        'name' => 'Alice Example',
+        'active' => true,
+    ]);
+    $newCompany = Company::factory()->create();
+
+    $user = employeeUserWithRole(Roles::MANAGER);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Alice Example');
+
+    $this->actingAs($user)
+        ->putJson(route('employees.update', $employee), [
+            'company_id' => $newCompany->id,
+            'name' => 'Updated Employee',
+            'email' => 'updated.employee@example.com',
+            'active' => false,
+        ])
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Updated Employee')
+        ->assertJsonPath('data.0.active', false);
+});
+
+it('invalidates cached employee lists after deleting an employee', function () {
+    config()->set('cache.enable_employees', true);
+
+    $employee = Employee::factory()->create([
+        'name' => 'Alice Example',
+    ]);
+    Employee::factory()->create([
+        'name' => 'Bob Example',
+    ]);
+
+    $user = employeeUserWithRole(Roles::MANAGER);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+
+    $this->actingAs($user)
+        ->deleteJson(route('employees.destroy', $employee))
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Bob Example');
+});
+
+it('invalidates cached employee lists after toggling an employee status', function () {
+    config()->set('cache.enable_employees', true);
+
+    $employee = Employee::factory()->create([
+        'name' => 'Alice Example',
+        'active' => true,
+    ]);
+
+    $user = employeeUserWithRole(Roles::MANAGER);
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonPath('data.0.active', true);
+
+    $this->actingAs($user)
+        ->patchJson(route('employees.toggle-active', $employee))
+        ->assertOk();
+
+    $this->actingAs($user)
+        ->getJson(route('employees.list'))
+        ->assertOk()
+        ->assertJsonPath('data.0.active', false);
 });
 
 it('allows authenticated users to create employees', function () {
