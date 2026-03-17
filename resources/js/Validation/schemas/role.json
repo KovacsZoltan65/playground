@@ -1,0 +1,30 @@
+{
+    "fields": {
+        "id": {
+            "nullable": true,
+            "types": ["integer"]
+        },
+        "name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255,
+            "unique": {
+                "table": "roles",
+                "column": "name",
+                "ignoreContextKey": "role",
+                "where": {
+                    "guard_name": "guard_name"
+                }
+            }
+        },
+        "guard_name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255
+        },
+        "permission_ids": {
+            "nullable": true,
+            "types": ["array"]
+        }
+    }
+}

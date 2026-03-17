@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Support\Permissions\CompanyPermissions;
 use App\Support\Permissions\EmployeePermissions;
+use App\Support\Permissions\PermissionPermissions;
+use App\Support\Permissions\RolePermissions;
 use App\Support\Permissions\SidebarTipPagePermissions;
 use Illuminate\Database\Seeder;
 use Spatie\Activitylog\Facades\Activity;
@@ -26,6 +28,14 @@ class PermissionSeeder extends Seeder
             }
 
             foreach (SidebarTipPagePermissions::all() as $permissionName) {
+                Permission::findOrCreate($permissionName, 'web');
+            }
+
+            foreach (PermissionPermissions::all() as $permissionName) {
+                Permission::findOrCreate($permissionName, 'web');
+            }
+
+            foreach (RolePermissions::all() as $permissionName) {
                 Permission::findOrCreate($permissionName, 'web');
             }
         });

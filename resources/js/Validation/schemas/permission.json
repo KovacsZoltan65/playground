@@ -1,0 +1,26 @@
+{
+    "fields": {
+        "id": {
+            "nullable": true,
+            "types": ["integer"]
+        },
+        "name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255,
+            "unique": {
+                "table": "permissions",
+                "column": "name",
+                "ignoreContextKey": "permission",
+                "where": {
+                    "guard_name": "guard_name"
+                }
+            }
+        },
+        "guard_name": {
+            "required": true,
+            "types": ["string"],
+            "max": 255
+        }
+    }
+}

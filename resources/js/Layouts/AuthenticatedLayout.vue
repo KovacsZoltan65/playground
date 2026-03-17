@@ -17,44 +17,80 @@ const sidebarTipConfig = computed(() => page.props.sidebar_tips ?? {
     tips: [],
 });
 
-const navigationItems = computed(() => {
+const navigationSections = computed(() => {
     currentLocale.value;
 
     return [
         {
-            label: trans('Dashboard'),
-            icon: 'pi pi-home',
-            route: 'dashboard',
-            activeRoute: 'dashboard',
+            label: trans('Workspace'),
+            items: [
+                {
+                    label: trans('Dashboard'),
+                    icon: 'pi pi-home',
+                    route: 'dashboard',
+                    activeRoute: 'dashboard',
+                },
+                {
+                    label: trans('Profile'),
+                    icon: 'pi pi-user',
+                    route: 'profile.edit',
+                    activeRoute: 'profile.*',
+                },
+            ],
         },
         {
-            label: trans('Companies'),
-            icon: 'pi pi-building',
-            route: 'companies.index',
-            activeRoute: 'companies.*',
-            permission: 'companies.viewAny',
+            label: trans('Operations'),
+            items: [
+                {
+                    label: trans('Companies'),
+                    icon: 'pi pi-building',
+                    route: 'companies.index',
+                    activeRoute: 'companies.*',
+                    permission: 'companies.viewAny',
+                },
+                {
+                    label: trans('Employees'),
+                    icon: 'pi pi-users',
+                    route: 'employees.index',
+                    activeRoute: 'employees.*',
+                    permission: 'employees.viewAny',
+                },
+                {
+                    label: trans('Usage tips'),
+                    icon: 'pi pi-lightbulb',
+                    route: 'usage-tips.index',
+                    activeRoute: 'usage-tips.*',
+                    permission: 'sidebarTipPages.viewAny',
+                },
+            ],
         },
         {
-            label: trans('Employees'),
-            icon: 'pi pi-users',
-            route: 'employees.index',
-            activeRoute: 'employees.*',
-            permission: 'employees.viewAny',
+            label: trans('Access Control'),
+            items: [
+                {
+                    label: trans('Roles'),
+                    icon: 'pi pi-shield',
+                    route: 'roles.index',
+                    activeRoute: 'roles.*',
+                    permission: 'roles.viewAny',
+                },
+                {
+                    label: trans('Permissions'),
+                    icon: 'pi pi-key',
+                    route: 'permissions.index',
+                    activeRoute: 'permissions.*',
+                    permission: 'permissions.viewAny',
+                },
+            ],
         },
-        {
-            label: trans('Usage tips'),
-            icon: 'pi pi-lightbulb',
-            route: 'usage-tips.index',
-            activeRoute: 'usage-tips.*',
-            permission: 'sidebarTipPages.viewAny',
-        },
-        {
-            label: trans('Profile'),
-            icon: 'pi pi-user',
-            route: 'profile.edit',
-            activeRoute: 'profile.*',
-        },
-    ].filter((item) => !item.permission || userPermissions.value.includes(item.permission));
+    ]
+        .map((section) => ({
+            ...section,
+            items: section.items.filter(
+                (item) => !item.permission || userPermissions.value.includes(item.permission),
+            ),
+        }))
+        .filter((section) => section.items.length > 0);
 });
 
 const isActive = (name) => route().current(name);
@@ -101,20 +137,32 @@ const isActive = (name) => route().current(name);
                 </p>
             </div>
 
-            <nav class="space-y-2">
-                <Link
-                    v-for="item in navigationItems"
-                    :key="item.route"
-                    :href="route(item.route)"
-                    :class="[
-                        'app-sidebar-link',
-                        isActive(item.activeRoute) ? 'app-sidebar-link-active' : '',
-                    ]"
-                    @click="sidebarOpen = false"
+            <nav class="space-y-6">
+                <section
+                    v-for="section in navigationSections"
+                    :key="section.label"
+                    class="space-y-2"
                 >
-                    <i :class="item.icon" class="text-base"></i>
-                    <span>{{ item.label }}</span>
-                </Link>
+                    <div class="px-3 text-xs uppercase tracking-[0.3em] text-slate-500">
+                        {{ section.label }}
+                    </div>
+
+                    <div class="space-y-2">
+                        <Link
+                            v-for="item in section.items"
+                            :key="item.route"
+                            :href="route(item.route)"
+                            :class="[
+                                'app-sidebar-link',
+                                isActive(item.activeRoute) ? 'app-sidebar-link-active' : '',
+                            ]"
+                            @click="sidebarOpen = false"
+                        >
+                            <i :class="item.icon" class="text-base"></i>
+                            <span>{{ item.label }}</span>
+                        </Link>
+                    </div>
+                </section>
             </nav>
 
             <SidebarUsageTips :config="sidebarTipConfig" />

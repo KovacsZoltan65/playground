@@ -80,6 +80,16 @@ final class SharedLaravelValidationRules
             (string) $config['column'],
         );
 
+        if (isset($config['where']) && is_array($config['where'])) {
+            foreach ($config['where'] as $column => $contextKey) {
+                if (! is_string($column) || ! is_string($contextKey) || ! array_key_exists($contextKey, $context)) {
+                    continue;
+                }
+
+                $rule->where($column, $context[$contextKey]);
+            }
+        }
+
         $ignoreContextKey = $config['ignoreContextKey'] ?? null;
 
         if (! \is_string($ignoreContextKey) || ! array_key_exists($ignoreContextKey, $context)) {

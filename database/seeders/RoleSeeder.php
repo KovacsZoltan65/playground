@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Support\Permissions\CompanyPermissions;
 use App\Support\Permissions\EmployeePermissions;
+use App\Support\Permissions\PermissionPermissions;
+use App\Support\Permissions\RolePermissions;
 use App\Support\Permissions\Roles;
 use App\Support\Permissions\SidebarTipPagePermissions;
 use Illuminate\Database\Seeder;
@@ -23,6 +25,8 @@ class RoleSeeder extends Seeder
             $adminRole->syncPermissions([
                 ...CompanyPermissions::all(),
                 ...EmployeePermissions::all(),
+                ...PermissionPermissions::all(),
+                ...RolePermissions::all(),
                 ...SidebarTipPagePermissions::all(),
             ]);
 

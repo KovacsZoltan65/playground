@@ -109,6 +109,10 @@ return [
     'companies_ttl' => 300,
     'enable_employees' => false,
     'employees_ttl' => 300,
+    'enable_permissions' => false,
+    'permissions_ttl' => 300,
+    'enable_roles' => false,
+    'roles_ttl' => 300,
     'enable_sidebar_tip_pages' => false,
     'sidebar_tip_pages_ttl' => 300,
     
