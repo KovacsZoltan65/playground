@@ -81,6 +81,13 @@ const navigationSections = computed(() => {
                     activeRoute: 'permissions.*',
                     permission: 'permissions.viewAny',
                 },
+                {
+                    label: trans('Temporary permissions'),
+                    icon: 'pi pi-clock',
+                    route: 'user-temporary-permissions.index',
+                    activeRoute: 'user-temporary-permissions.*',
+                    permission: 'userTemporaryPermissions.viewAny',
+                },
             ],
         },
     ]

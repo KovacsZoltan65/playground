@@ -7,6 +7,7 @@ use App\Support\Permissions\EmployeePermissions;
 use App\Support\Permissions\PermissionPermissions;
 use App\Support\Permissions\RolePermissions;
 use App\Support\Permissions\SidebarTipPagePermissions;
+use App\Support\Permissions\UserTemporaryPermissionPermissions;
 use Illuminate\Database\Seeder;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Permission;
@@ -36,6 +37,10 @@ class PermissionSeeder extends Seeder
             }
 
             foreach (RolePermissions::all() as $permissionName) {
+                Permission::findOrCreate($permissionName, 'web');
+            }
+
+            foreach (UserTemporaryPermissionPermissions::all() as $permissionName) {
                 Permission::findOrCreate($permissionName, 'web');
             }
         });

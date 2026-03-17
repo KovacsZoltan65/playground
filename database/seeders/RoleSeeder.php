@@ -8,6 +8,7 @@ use App\Support\Permissions\PermissionPermissions;
 use App\Support\Permissions\RolePermissions;
 use App\Support\Permissions\Roles;
 use App\Support\Permissions\SidebarTipPagePermissions;
+use App\Support\Permissions\UserTemporaryPermissionPermissions;
 use Illuminate\Database\Seeder;
 use Spatie\Activitylog\Facades\Activity;
 use Spatie\Permission\Models\Role;
@@ -27,6 +28,7 @@ class RoleSeeder extends Seeder
                 ...EmployeePermissions::all(),
                 ...PermissionPermissions::all(),
                 ...RolePermissions::all(),
+                ...UserTemporaryPermissionPermissions::all(),
                 ...SidebarTipPagePermissions::all(),
             ]);
 

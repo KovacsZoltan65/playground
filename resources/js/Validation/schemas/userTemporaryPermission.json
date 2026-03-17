@@ -1,0 +1,37 @@
+{
+    "fields": {
+        "id": {
+            "nullable": true,
+            "types": ["integer"]
+        },
+        "user_id": {
+            "required": true,
+            "types": ["integer"],
+            "exists": {
+                "table": "users",
+                "column": "id"
+            }
+        },
+        "permission_id": {
+            "required": true,
+            "types": ["integer"],
+            "exists": {
+                "table": "permissions",
+                "column": "id"
+            }
+        },
+        "starts_at": {
+            "required": true,
+            "types": ["string"]
+        },
+        "ends_at": {
+            "required": true,
+            "types": ["string"]
+        },
+        "reason": {
+            "nullable": true,
+            "types": ["string"],
+            "max": 1000
+        }
+    }
+}
