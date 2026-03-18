@@ -19,13 +19,23 @@ class PermissionRepository implements PermissionRepositoryInterface
     public function paginateForIndex(array $filters = [], int $perPage = 10, ?bool $needCache = null): LengthAwarePaginator
     {
         $needCache ??= (bool) config('cache.enable_permissions', false);
+        $sortField = $filters['sort_field'] ?? 'name';
+        $sortDirection = $filters['sort_direction'] ?? 'asc';
         $page = Paginator::resolveCurrentPage('page');
         $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
 
-        $queryCallback = function () use ($filters, $perPage, $page, $appendQuery): LengthAwarePaginator {
-            $paginator = $this->buildIndexQuery($filters)
-                ->orderBy('name')
-                ->paginate($perPage, ['*'], 'page', $page);
+        $queryCallback = function () use (
+            $filters,
+            $perPage,
+            $page,
+            $appendQuery,
+            $sortField,
+            $sortDirection
+        ): LengthAwarePaginator {
+            $query = $this->buildIndexQuery($filters);
+            $this->applySorting($query, $sortField, $sortDirection);
+
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
             $paginator->appends($appendQuery);
 
@@ -120,6 +130,8 @@ class PermissionRepository implements PermissionRepositoryInterface
             'search' => $filters['global'] ?? null,
             'name' => $filters['name'] ?? null,
             'guard_name' => $filters['guard_name'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? 'name',
+            'sort_direction' => $filters['sort_direction'] ?? 'asc',
             'per_page' => $perPage,
             'page' => $page,
         ], fn ($value) => $value !== null && $value !== '');
@@ -132,6 +144,8 @@ class PermissionRepository implements PermissionRepositoryInterface
                 'global' => $filters['global'] ?? null,
                 'name' => $filters['name'] ?? null,
                 'guard_name' => $filters['guard_name'] ?? null,
+                'sort_field' => $filters['sort_field'] ?? 'name',
+                'sort_direction' => $filters['sort_direction'] ?? 'asc',
             ],
             'per_page' => $perPage,
             'page' => $page,
@@ -157,5 +171,22 @@ class PermissionRepository implements PermissionRepositoryInterface
     private function rolesCacheTag(): string
     {
         return 'roles';
+    }
+
+    private function applySorting(Builder $query, string $sortField, string $sortDirection): void
+    {
+        $direction = strtolower($sortDirection) === 'desc' ? 'desc' : 'asc';
+
+        $sortableFields = [
+            'name',
+            'guard_name',
+            'roles_count',
+            'updated_at',
+            'created_at',
+        ];
+
+        $field = in_array($sortField, $sortableFields, true) ? $sortField : 'name';
+
+        $query->orderBy($field, $direction)->orderBy('id');
     }
 }

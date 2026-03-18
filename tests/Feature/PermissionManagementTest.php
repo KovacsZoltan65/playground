@@ -119,6 +119,29 @@ it('filters permissions by guard', function () {
         ->assertJsonPath('data.0.guard_name', 'api');
 });
 
+it('sorts permissions by assigned role count descending', function () {
+    $permissionWithRoles = Permission::create(['name' => 'sortable.reports.view', 'guard_name' => 'web']);
+    $permissionWithoutRoles = Permission::create(['name' => 'sortable.reports.export', 'guard_name' => 'web']);
+
+    $managerRole = Role::findByName(Roles::MANAGER);
+    $hrRole = Role::findByName(Roles::HR);
+
+    $managerRole->givePermissionTo($permissionWithRoles);
+    $hrRole->givePermissionTo($permissionWithRoles);
+
+    $response = $this->actingAs(permissionUserWithRole(Roles::ADMIN))
+        ->getJson(route('permissions.list', [
+            'search' => 'sortable.reports',
+            'sort_field' => 'roles_count',
+            'sort_direction' => 'desc',
+        ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'sortable.reports.view')
+        ->assertJsonPath('data.1.name', 'sortable.reports.export');
+});
+
 it('shows how many roles use each permission', function () {
     $permission = Permission::create(['name' => 'reports.view', 'guard_name' => 'web']);
     $otherPermission = Permission::create(['name' => 'reports.export', 'guard_name' => 'web']);

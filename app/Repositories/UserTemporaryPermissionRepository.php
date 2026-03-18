@@ -24,10 +24,15 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
 
         $page = Paginator::resolveCurrentPage('page');
         $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
+        $sortField = $filters['sort_field'] ?? null;
+        $sortDirection = $filters['sort_direction'] ?? null;
 
-        $queryCallback = function () use ($filters, $perPage, $page, $appendQuery): LengthAwarePaginator {
-            $paginator = $this->buildIndexQuery($filters)
-                ->orderByDesc('starts_at')
+        $queryCallback = function () use ($filters, $perPage, $page, $appendQuery, $sortField, $sortDirection): LengthAwarePaginator {
+            $paginator = $this->applySorting(
+                $this->buildIndexQuery($filters),
+                $sortField,
+                $sortDirection,
+            )
                 ->orderByDesc('id')
                 ->paginate($perPage, ['*'], 'page', $page);
 
@@ -184,6 +189,8 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
             'user_id' => $filters['user_id'] ?? null,
             'permission_id' => $filters['permission_id'] ?? null,
             'status' => $filters['status'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? null,
+            'sort_direction' => $filters['sort_direction'] ?? null,
             'per_page' => $perPage,
             'page' => $page,
         ], fn ($value) => $value !== null && $value !== '');
@@ -197,6 +204,8 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
                 'user_id' => $filters['user_id'] ?? null,
                 'permission_id' => $filters['permission_id'] ?? null,
                 'status' => $filters['status'] ?? null,
+                'sort_field' => $filters['sort_field'] ?? null,
+                'sort_direction' => $filters['sort_direction'] ?? null,
             ],
             'per_page' => $perPage,
             'page' => $page,
@@ -208,6 +217,36 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
     private function flushListCache(): void
     {
         $this->cacheService->forgetAll($this->cacheTag());
+    }
+
+    private function applySorting(Builder $query, ?string $sortField, ?string $sortDirection): Builder
+    {
+        $direction = strtolower((string) $sortDirection) === 'asc' ? 'asc' : 'desc';
+
+        return match ($sortField) {
+            'user_name' => $query->orderBy(
+                User::query()
+                    ->select('name')
+                    ->whereColumn('users.id', 'user_temporary_permissions.user_id'),
+                $direction,
+            ),
+            'permission_name' => $query->orderBy(
+                Permission::query()
+                    ->select('name')
+                    ->whereColumn('permissions.id', 'user_temporary_permissions.permission_id'),
+                $direction,
+            ),
+            'status' => $query->orderByRaw(
+                "case
+                    when starts_at > ? then 1
+                    when ends_at < ? then 2
+                    else 0
+                end {$direction}",
+                [now(), now()],
+            ),
+            'starts_at', 'ends_at', 'updated_at' => $query->orderBy($sortField, $direction),
+            default => $query->orderByDesc('starts_at'),
+        };
     }
 
     private function cacheTag(): string

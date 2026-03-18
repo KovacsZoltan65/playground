@@ -265,6 +265,40 @@ it('filters assignments by status', function () {
         ->assertJsonPath('data.0.permission_name', EmployeePermissions::DELETE);
 });
 
+it('sorts temporary permission assignments by user name ascending', function () {
+    $alphaUser = User::factory()->create(['name' => 'Alpha Temporary Sort']);
+    $alphaUser->assignRole(Roles::USER);
+
+    $zetaUser = User::factory()->create(['name' => 'Zeta Temporary Sort']);
+    $zetaUser->assignRole(Roles::USER);
+
+    assignTemporaryPermission(
+        $zetaUser,
+        EmployeePermissions::UPDATE,
+        '2026-03-20 08:00:00',
+        '2026-03-25 18:00:00',
+        'sort-temporary-users',
+    );
+
+    assignTemporaryPermission(
+        $alphaUser,
+        EmployeePermissions::UPDATE,
+        '2026-03-21 08:00:00',
+        '2026-03-26 18:00:00',
+        'sort-temporary-users',
+    );
+
+    $this->actingAs(temporaryPermissionUserWithRole(Roles::ADMIN))
+        ->getJson(route('user-temporary-permissions.list', [
+            'search' => 'sort-temporary-users',
+            'sort_field' => 'user_name',
+            'sort_direction' => 'asc',
+        ]))
+        ->assertOk()
+        ->assertJsonPath('data.0.user_name', 'Alpha Temporary Sort')
+        ->assertJsonPath('data.1.user_name', 'Zeta Temporary Sort');
+});
+
 it('allows a protected action when a user has an active temporary permission', function () {
     $user = temporaryPermissionUserWithRole(Roles::USER);
     $company = Company::factory()->create();

@@ -60,6 +60,8 @@ class UserTemporaryPermissionController extends Controller
                     'user_id' => $request->integer('user_id') ?: null,
                     'permission_id' => $request->integer('permission_id') ?: null,
                     'status' => $request->string('status')->toString() ?: null,
+                    'sort_field' => $request->string('sort_field')->toString() ?: null,
+                    'sort_direction' => $request->string('sort_direction')->toString() ?: null,
                 ],
                 perPage: (int) $request->integer('per_page', 10),
             ),

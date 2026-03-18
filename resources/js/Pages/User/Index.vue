@@ -56,6 +56,8 @@ const tableFilters = ref({
 const tableState = reactive({
     page: 1,
     perPage: 10,
+    sortField: "name",
+    sortOrder: 1,
 });
 
 const meta = reactive({
@@ -177,6 +179,8 @@ const fetchUsers = async () => {
             name: tableFilters.value.name.value || undefined,
             email: tableFilters.value.email.value || undefined,
             role_id: tableFilters.value.role_id.value || undefined,
+            sort_field: tableState.sortField,
+            sort_direction: tableState.sortOrder === -1 ? "desc" : "asc",
             page: tableState.page,
             per_page: tableState.perPage,
         });
@@ -214,6 +218,13 @@ const onPage = async (event) => {
 
 const onFilter = async (event) => {
     tableFilters.value = event.filters;
+    tableState.page = 1;
+    await fetchUsers();
+};
+
+const onSort = async (event) => {
+    tableState.sortField = event.sortField || "name";
+    tableState.sortOrder = event.sortOrder || 1;
     tableState.page = 1;
     await fetchUsers();
 };
@@ -622,6 +633,8 @@ onBeforeUnmount(() => {
                         removableSort
                         filter-display="menu"
                         data-key="id"
+                        :sort-field="tableState.sortField"
+                        :sort-order="tableState.sortOrder"
                         :rows="meta.per_page"
                         :first="(meta.current_page - 1) * meta.per_page"
                         :total-records="meta.total"
@@ -631,6 +644,7 @@ onBeforeUnmount(() => {
                         table-style="min-width: 60rem"
                         @page="onPage"
                         @filter="onFilter"
+                        @sort="onSort"
                     >
                         <template #header>
                             <div

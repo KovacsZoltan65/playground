@@ -56,6 +56,8 @@ class UserController extends Controller
                     'name' => $request->string('name')->toString() ?: null,
                     'email' => $request->string('email')->toString() ?: null,
                     'role_id' => $request->integer('role_id') ?: null,
+                    'sort_field' => $request->string('sort_field')->toString() ?: 'name',
+                    'sort_direction' => $request->string('sort_direction')->toString() ?: 'asc',
                 ],
                 perPage: (int) $request->integer('per_page', 10),
             ),

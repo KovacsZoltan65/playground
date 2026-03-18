@@ -58,6 +58,8 @@ const tableFilters = ref({
 const tableState = reactive({
     page: 1,
     perPage: 10,
+    sortField: "starts_at",
+    sortOrder: -1,
 });
 
 const meta = reactive({
@@ -192,6 +194,13 @@ const fetchAssignments = async () => {
             user_id: tableFilters.value.user_id.value || undefined,
             permission_id: tableFilters.value.permission_id.value || undefined,
             status: tableFilters.value.status.value || undefined,
+            sort_field: tableState.sortField || undefined,
+            sort_direction:
+                tableState.sortField && tableState.sortOrder
+                    ? tableState.sortOrder === 1
+                        ? "asc"
+                        : "desc"
+                    : undefined,
             page: tableState.page,
             per_page: tableState.perPage,
         });
@@ -229,6 +238,13 @@ const onPage = async (event) => {
 
 const onFilter = async (event) => {
     tableFilters.value = event.filters;
+    tableState.page = 1;
+    await fetchAssignments();
+};
+
+const onSort = async (event) => {
+    tableState.sortField = event.sortField ?? null;
+    tableState.sortOrder = event.sortOrder ?? null;
     tableState.page = 1;
     await fetchAssignments();
 };
@@ -624,12 +640,15 @@ onBeforeUnmount(() => {
                         :rows="meta.per_page"
                         :first="(meta.current_page - 1) * meta.per_page"
                         :total-records="meta.total"
+                        :sort-field="tableState.sortField"
+                        :sort-order="tableState.sortOrder"
                         :global-filter-fields="['user_name', 'permission_name', 'reason']"
                         paginator-template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
                         :rows-per-page-options="[10, 25, 50]"
                         table-style="min-width: 64rem"
                         @page="onPage"
                         @filter="onFilter"
+                        @sort="onSort"
                     >
                         <template #header>
                             <div

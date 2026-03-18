@@ -116,6 +116,27 @@ it('filters roles by guard', function () {
         ->assertJsonPath('data.0.guard_name', 'api');
 });
 
+it('sorts roles by permission count descending', function () {
+    $permissionA = Permission::create(['name' => 'reports.view', 'guard_name' => 'web']);
+    $permissionB = Permission::create(['name' => 'reports.export', 'guard_name' => 'web']);
+
+    $roleWithoutPermissions = Role::create(['name' => 'Sortable Viewer', 'guard_name' => 'web']);
+    $roleWithPermissions = Role::create(['name' => 'Sortable Manager', 'guard_name' => 'web']);
+    $roleWithPermissions->syncPermissions([$permissionA->id, $permissionB->id]);
+
+    $response = $this->actingAs(roleUserWithRole(Roles::ADMIN))
+        ->getJson(route('roles.list', [
+            'search' => 'Sortable',
+            'sort_field' => 'permissions_count',
+            'sort_direction' => 'desc',
+        ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Sortable Manager')
+        ->assertJsonPath('data.1.name', 'Sortable Viewer');
+});
+
 it('includes assigned permission information in the role payload', function () {
     $permissionA = Permission::create(['name' => 'reports.view', 'guard_name' => 'web']);
     $permissionB = Permission::create(['name' => 'reports.export', 'guard_name' => 'web']);

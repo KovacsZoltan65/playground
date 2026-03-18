@@ -130,6 +130,33 @@ it('filters users by role', function () {
         ->assertJsonPath('data.0.role_names.0', Roles::MANAGER);
 });
 
+it('sorts users by assigned role count descending', function () {
+    $managerRole = Role::findByName(Roles::MANAGER, 'web');
+    $hrRole = Role::findByName(Roles::HR, 'web');
+
+    $singleRoleUser = User::factory()->create([
+        'name' => 'Single Role User',
+    ]);
+    $singleRoleUser->assignRole(Roles::USER);
+
+    $multiRoleUser = User::factory()->create([
+        'name' => 'Multi Role User',
+    ]);
+    $multiRoleUser->assignRole([$managerRole, $hrRole]);
+
+    $response = $this->actingAs(userManagerWithRole(Roles::ADMIN))
+        ->getJson(route('users.list', [
+            'search' => 'Role User',
+            'sort_field' => 'roles_count',
+            'sort_direction' => 'desc',
+        ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Multi Role User')
+        ->assertJsonPath('data.1.name', 'Single Role User');
+});
+
 it('shows a single user with role assignments', function () {
     $user = User::factory()->create();
     $user->assignRole(Roles::MANAGER);

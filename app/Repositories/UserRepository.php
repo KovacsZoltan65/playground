@@ -20,13 +20,23 @@ class UserRepository implements UserRepositoryInterface
     public function paginateForIndex(array $filters = [], int $perPage = 10, ?bool $needCache = null): LengthAwarePaginator
     {
         $needCache ??= (bool) config('cache.enable_users', false);
+        $sortField = $filters['sort_field'] ?? 'name';
+        $sortDirection = $filters['sort_direction'] ?? 'asc';
         $page = Paginator::resolveCurrentPage('page');
         $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
 
-        $queryCallback = function () use ($filters, $perPage, $page, $appendQuery): LengthAwarePaginator {
-            $paginator = $this->buildIndexQuery($filters)
-                ->orderBy('name')
-                ->paginate($perPage, ['*'], 'page', $page);
+        $queryCallback = function () use (
+            $filters,
+            $perPage,
+            $page,
+            $appendQuery,
+            $sortField,
+            $sortDirection
+        ): LengthAwarePaginator {
+            $query = $this->buildIndexQuery($filters);
+            $this->applySorting($query, $sortField, $sortDirection);
+
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
             $paginator->appends($appendQuery);
 
@@ -159,6 +169,8 @@ class UserRepository implements UserRepositoryInterface
             'name' => $filters['name'] ?? null,
             'email' => $filters['email'] ?? null,
             'role_id' => $filters['role_id'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? 'name',
+            'sort_direction' => $filters['sort_direction'] ?? 'asc',
             'per_page' => $perPage,
             'page' => $page,
         ], fn ($value) => $value !== null && $value !== '');
@@ -172,6 +184,8 @@ class UserRepository implements UserRepositoryInterface
                 'name' => $filters['name'] ?? null,
                 'email' => $filters['email'] ?? null,
                 'role_id' => $filters['role_id'] ?? null,
+                'sort_field' => $filters['sort_field'] ?? 'name',
+                'sort_direction' => $filters['sort_direction'] ?? 'asc',
             ],
             'per_page' => $perPage,
             'page' => $page,
@@ -191,5 +205,23 @@ class UserRepository implements UserRepositoryInterface
     private function usersCacheTag(): string
     {
         return 'users';
+    }
+
+    private function applySorting(Builder $query, string $sortField, string $sortDirection): void
+    {
+        $direction = strtolower($sortDirection) === 'desc' ? 'desc' : 'asc';
+
+        $sortableFields = [
+            'name',
+            'email',
+            'roles_count',
+            'email_verified_at',
+            'updated_at',
+            'created_at',
+        ];
+
+        $field = in_array($sortField, $sortableFields, true) ? $sortField : 'name';
+
+        $query->orderBy($field, $direction)->orderBy('id');
     }
 }

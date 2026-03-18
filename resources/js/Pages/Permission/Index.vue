@@ -54,6 +54,8 @@ const tableFilters = ref({
 const tableState = reactive({
     page: 1,
     perPage: 10,
+    sortField: "name",
+    sortOrder: 1,
 });
 
 const meta = reactive({
@@ -152,6 +154,8 @@ const fetchPermissions = async () => {
             search: tableFilters.value.global.value || undefined,
             name: tableFilters.value.name.value || undefined,
             guard_name: tableFilters.value.guard_name.value || undefined,
+            sort_field: tableState.sortField,
+            sort_direction: tableState.sortOrder === -1 ? "desc" : "asc",
             page: tableState.page,
             per_page: tableState.perPage,
         });
@@ -189,6 +193,13 @@ const onPage = async (event) => {
 
 const onFilter = async (event) => {
     tableFilters.value = event.filters;
+    tableState.page = 1;
+    await fetchPermissions();
+};
+
+const onSort = async (event) => {
+    tableState.sortField = event.sortField || "name";
+    tableState.sortOrder = event.sortOrder || 1;
     tableState.page = 1;
     await fetchPermissions();
 };
@@ -408,11 +419,15 @@ onBeforeUnmount(() => {
 
         <div class="space-y-6">
             <ConfirmDialog />
+
+            <!-- Create Modal -->
             <CreateModal
                 v-model="createOpen"
                 :guard-options="guardOptions"
                 @saved="handleSaved"
             />
+
+            <!-- Edit Modal -->
             <EditModal
                 v-model="editOpen"
                 :permission="editPermission"
@@ -470,6 +485,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div class="flex flex-wrap gap-3">
+                            <!-- Refresh -->
                             <Button
                                 :label="$t('Refresh')"
                                 icon="pi pi-refresh"
@@ -477,6 +493,8 @@ onBeforeUnmount(() => {
                                 outlined
                                 @click="refreshPermissions"
                             />
+
+                            <!-- Create -->
                             <Button
                                 :label="$t('Create permission')"
                                 icon="pi pi-plus"
@@ -489,6 +507,7 @@ onBeforeUnmount(() => {
                         class="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
                     >
                         <div class="flex flex-wrap gap-3">
+                            <!-- Delete Selected -->
                             <Button
                                 :label="$t('Delete selected')"
                                 icon="pi pi-trash"
@@ -499,6 +518,7 @@ onBeforeUnmount(() => {
                             />
                         </div>
 
+                        <!-- View Columns -->
                         <MultiSelect
                             v-model="visibleColumnKeys"
                             :options="availableColumns"
@@ -522,6 +542,8 @@ onBeforeUnmount(() => {
                         removableSort
                         filter-display="menu"
                         data-key="id"
+                        :sort-field="tableState.sortField"
+                        :sort-order="tableState.sortOrder"
                         :rows="meta.per_page"
                         :first="(meta.current_page - 1) * meta.per_page"
                         :total-records="meta.total"
@@ -531,6 +553,7 @@ onBeforeUnmount(() => {
                         table-style="min-width: 56rem"
                         @page="onPage"
                         @filter="onFilter"
+                        @sort="onSort"
                     >
                         <template #header>
                             <div
@@ -705,8 +728,7 @@ onBeforeUnmount(() => {
                         >
                             <template #body="{ data }">
                                 <span class="text-slate-600">{{
-                                    (formatDateTime(data.updated_at),
-                                    {
+                                    formatDateTime(data.updated_at, {
                                         pattern: "yyyy-mm-dd HH:MM",
                                     })
                                 }}</span>

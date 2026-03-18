@@ -63,6 +63,8 @@ class RoleController extends Controller
                     'global' => $request->string('search')->toString() ?: null,
                     'name' => $request->string('name')->toString() ?: null,
                     'guard_name' => $request->string('guard_name')->toString() ?: null,
+                    'sort_field' => $request->string('sort_field')->toString() ?: 'name',
+                    'sort_direction' => $request->string('sort_direction')->toString() ?: 'asc',
                 ],
                 perPage: (int) $request->integer('per_page', 10),
             ),
