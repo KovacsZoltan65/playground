@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import userService from "@/Services/UserService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
+import { formatDateTime } from "@/Support/dates/formatDate";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -103,8 +104,10 @@ const roleFilterOptions = computed(() => {
 const quickStats = computed(() => {
     currentLocale.value;
 
-    const verifiedCount = users.value.filter((user) => Boolean(user.email_verified_at)).length;
-    const missingRoleCount = users.value.filter((user) => (user.roles_count ?? 0) === 0).length;
+    const verifiedCount = users.value.filter((user) => Boolean(user.email_verified_at))
+        .length;
+    const missingRoleCount = users.value.filter((user) => (user.roles_count ?? 0) === 0)
+        .length;
 
     return [
         {
@@ -291,10 +294,10 @@ const sendVerificationEmail = async (user) => {
     try {
         const response = await userService.sendVerificationEmail(user.id);
         showSuccessToast(
-            response.message
-                || (user.email_verified_at
+            response.message ||
+                (user.email_verified_at
                     ? trans("Verification email resent successfully.")
-                    : trans("Verification email sent successfully.")),
+                    : trans("Verification email sent successfully."))
         );
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
@@ -371,22 +374,6 @@ const roleAssignmentState = (user) => {
         severity: "warn",
         value: trans("Needs review"),
     };
-};
-
-const formatDateTime = (value) => {
-    if (!value) {
-        return trans("N/A");
-    }
-
-    const date = new Date(value);
-
-    return new Intl.DateTimeFormat(currentLocale.value, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
 };
 
 const restoreVisibleColumns = () => {
@@ -807,8 +794,8 @@ onBeforeUnmount(() => {
                                     </div>
                                     <div class="text-xs text-slate-500">
                                         {{
-                                            data.role_names?.join(", ")
-                                            || $t("No roles assigned")
+                                            data.role_names?.join(", ") ||
+                                            $t("No roles assigned")
                                         }}
                                     </div>
                                 </div>
@@ -824,11 +811,17 @@ onBeforeUnmount(() => {
                             <template #body="{ data }">
                                 <div class="flex flex-col gap-2">
                                     <Tag
-                                        :severity="verificationSeverity(data.email_verified_at)"
+                                        :severity="
+                                            verificationSeverity(data.email_verified_at)
+                                        "
                                         :value="verificationLabel(data.email_verified_at)"
                                     />
                                     <span class="text-xs text-slate-500">
-                                        {{ formatDateTime(data.email_verified_at) }}
+                                        {{
+                                            formatDateTime(data.email_verified_at, {
+                                                pattern: "yyyy-mm-dd HH:MM",
+                                            })
+                                        }}
                                     </span>
                                 </div>
                             </template>
@@ -842,7 +835,11 @@ onBeforeUnmount(() => {
                         >
                             <template #body="{ data }">
                                 <span class="text-slate-600">
-                                    {{ formatDateTime(data.updated_at) }}
+                                    {{
+                                        formatDateTime(data.updated_at, {
+                                            pattern: "yyyy-mm-dd HH:MM",
+                                        })
+                                    }}
                                 </span>
                             </template>
                         </Column>

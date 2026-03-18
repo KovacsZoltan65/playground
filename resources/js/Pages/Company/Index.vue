@@ -4,6 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import companyService from "@/Services/CompanyService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
+import { formatDateTime } from "@/Support/dates/formatDate";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -504,23 +505,6 @@ const getContactHealth = (company) => {
         severity: "warn",
         value: trans("Needs review"),
     };
-};
-
-// Dátum rövid, lokalizált megjelenítése.
-const formatDateTime = (value) => {
-    if (!value) {
-        return trans("N/A");
-    }
-
-    const date = new Date(value);
-
-    return new Intl.DateTimeFormat(currentLocale.value, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
 };
 
 // A mentett oszlopbeállítás visszaállítása a localStorage-ból.

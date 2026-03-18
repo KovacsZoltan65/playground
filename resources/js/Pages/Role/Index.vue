@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import CreateModal from "@/Pages/Role/CreateModal.vue";
 import EditModal from "@/Pages/Role/EditModal.vue";
+import { formatDateTime } from "@/Support/dates/formatDate";
 import roleService from "@/Services/RoleService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { currentLocale, trans } from "laravel-vue-i18n";
@@ -28,7 +29,12 @@ const props = defineProps({
 });
 
 const COLUMN_VISIBILITY_STORAGE_KEY = "role-index-visible-columns";
-const DEFAULT_VISIBLE_COLUMN_KEYS = ["name", "guard_name", "permissions_count", "updated_at"];
+const DEFAULT_VISIBLE_COLUMN_KEYS = [
+    "name",
+    "guard_name",
+    "permissions_count",
+    "updated_at",
+];
 const MINIMUM_VISIBLE_COLUMN_KEY = "name";
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -336,7 +342,7 @@ const applyVisibleColumns = (keys) => {
     }
 
     visibleColumnKeys.value = nextKeys.filter((key) =>
-        availableColumns.value.some((column) => column.value === key),
+        availableColumns.value.some((column) => column.value === key)
     );
 };
 
@@ -361,19 +367,8 @@ const restoreVisibleColumns = () => {
 const persistVisibleColumns = () => {
     window.localStorage.setItem(
         COLUMN_VISIBILITY_STORAGE_KEY,
-        JSON.stringify(visibleColumnKeys.value),
+        JSON.stringify(visibleColumnKeys.value)
     );
-};
-
-const formatDateTime = (value) => {
-    if (!value) {
-        return trans("N/A");
-    }
-
-    return new Intl.DateTimeFormat(currentLocale.value, {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(new Date(value));
 };
 
 watch(searchInput, (value) => {
@@ -393,7 +388,7 @@ watch(
     () => {
         persistVisibleColumns();
     },
-    { deep: true },
+    { deep: true }
 );
 
 onMounted(async () => {
@@ -437,10 +432,14 @@ onBeforeUnmount(() => {
                     class="app-card border-0"
                 >
                     <template #content>
-                        <div class="text-sm font-medium uppercase tracking-[0.3em] text-slate-500">
+                        <div
+                            class="text-sm font-medium uppercase tracking-[0.3em] text-slate-500"
+                        >
                             {{ stat.label }}
                         </div>
-                        <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                        <div
+                            class="mt-3 text-3xl font-semibold tracking-tight text-slate-950"
+                        >
                             {{ stat.value }}
                         </div>
                         <div class="mt-2 text-sm text-slate-500">
@@ -452,16 +451,26 @@ onBeforeUnmount(() => {
 
             <Card class="app-card border-0">
                 <template #content>
-                    <div class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div
+                        class="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"
+                    >
                         <div>
-                            <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">
+                            <div
+                                class="text-sm uppercase tracking-[0.3em] text-emerald-600"
+                            >
                                 {{ $t("Access Control") }}
                             </div>
-                            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                            <h1
+                                class="mt-2 text-3xl font-semibold tracking-tight text-slate-950"
+                            >
                                 {{ $t("Manage roles") }}
                             </h1>
                             <p class="mt-2 max-w-3xl text-slate-500">
-                                {{ $t("Maintain role definitions and the permission bundles assigned to each one.") }}
+                                {{
+                                    $t(
+                                        "Maintain role definitions and the permission bundles assigned to each one."
+                                    )
+                                }}
                             </p>
                         </div>
 
@@ -481,7 +490,9 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
 
-                    <div class="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                    <div
+                        class="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
+                    >
                         <div class="flex flex-wrap gap-3">
                             <Button
                                 :label="$t('Delete selected')"
@@ -527,11 +538,19 @@ onBeforeUnmount(() => {
                         @filter="onFilter"
                     >
                         <template #header>
-                            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div
+                                class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                            >
                                 <div class="text-sm text-slate-500">
-                                    {{ $t("Repository-backed CRUD with PrimeVue components.") }}
+                                    {{
+                                        $t(
+                                            "Repository-backed CRUD with PrimeVue components."
+                                        )
+                                    }}
                                 </div>
-                                <div class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row">
+                                <div
+                                    class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row"
+                                >
                                     <Button
                                         type="button"
                                         icon="pi pi-filter-slash"
@@ -566,7 +585,11 @@ onBeforeUnmount(() => {
                                     {{ $t("No roles found for the current filters.") }}
                                 </div>
                                 <div class="mt-2 text-sm text-slate-500">
-                                    {{ $t("Try clearing filters or broadening your search.") }}
+                                    {{
+                                        $t(
+                                            "Try clearing filters or broadening your search."
+                                        )
+                                    }}
                                 </div>
                                 <Button
                                     class="mt-4"
@@ -587,6 +610,7 @@ onBeforeUnmount(() => {
 
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
+                        <!-- Name -->
                         <Column
                             field="name"
                             :header="$t('Role name')"
@@ -602,7 +626,10 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <div class="cursor-pointer py-1" @dblclick="openEditModal(data)">
+                                <div
+                                    class="cursor-pointer py-1"
+                                    @dblclick="openEditModal(data)"
+                                >
                                     <div class="font-medium text-slate-900">
                                         <button
                                             type="button"
@@ -611,16 +638,22 @@ onBeforeUnmount(() => {
                                             @click="openEditModal(data)"
                                         >
                                             {{ data.name }}
-                                            <i class="pi pi-arrow-up-right text-xs text-emerald-600" />
+                                            <i
+                                                class="pi pi-arrow-up-right text-xs text-emerald-600"
+                                            />
                                         </button>
                                     </div>
                                     <div class="mt-1 text-sm text-slate-500">
-                                        {{ data.permission_names?.join(", ") || $t("No permissions assigned") }}
+                                        {{
+                                            data.permission_names?.join(", ") ||
+                                            $t("No permissions assigned")
+                                        }}
                                     </div>
                                 </div>
                             </template>
                         </Column>
 
+                        <!-- Guard Name -->
                         <Column
                             field="guard_name"
                             :header="$t('Guard')"
@@ -644,6 +677,7 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
+                        <!-- Permissions Count -->
                         <Column
                             field="permissions_count"
                             :header="$t('Assigned permissions')"
@@ -651,10 +685,13 @@ onBeforeUnmount(() => {
                             v-if="isColumnVisible('permissions_count')"
                         >
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ data.permissions_count }}</span>
+                                <span class="text-slate-600">{{
+                                    data.permissions_count
+                                }}</span>
                             </template>
                         </Column>
 
+                        <!-- Updated At -->
                         <Column
                             field="updated_at"
                             :header="$t('Last updated')"
@@ -662,7 +699,11 @@ onBeforeUnmount(() => {
                             v-if="isColumnVisible('updated_at')"
                         >
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ formatDateTime(data.updated_at) }}</span>
+                                <span class="text-slate-600">{{
+                                    formatDateTime(data.updated_at, {
+                                        pattern: "yyyy-mm-dd HH:MM",
+                                    })
+                                }}</span>
                             </template>
                         </Column>
 
@@ -677,7 +718,10 @@ onBeforeUnmount(() => {
                         </Column>
                     </DataTable>
 
-                    <div v-if="activeFilters.length > 0" class="mt-5 flex flex-wrap gap-2">
+                    <div
+                        v-if="activeFilters.length > 0"
+                        class="mt-5 flex flex-wrap gap-2"
+                    >
                         <div
                             v-for="filter in activeFilters"
                             :key="filter.key"
@@ -692,7 +736,12 @@ onBeforeUnmount(() => {
                                 <i class="pi pi-times text-xs" />
                             </button>
                         </div>
-                        <Button :label="$t('Clear all filters')" icon="pi pi-times" text @click="clearFilters" />
+                        <Button
+                            :label="$t('Clear all filters')"
+                            icon="pi pi-times"
+                            text
+                            @click="clearFilters"
+                        />
                     </div>
                 </template>
             </Card>

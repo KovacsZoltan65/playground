@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import userTemporaryPermissionService from "@/Services/UserTemporaryPermissionService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
+import { formatDateTime } from "@/Support/dates/formatDate";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -389,17 +390,6 @@ const restoreVisibleColumns = () => {
     }
 };
 
-const formatDateTime = (value) => {
-    if (!value) {
-        return trans("N/A");
-    }
-
-    return new Intl.DateTimeFormat(currentLocale.value, {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(new Date(value));
-};
-
 const statusSeverity = (status) =>
     ({
         active: "success",
@@ -560,11 +550,7 @@ onBeforeUnmount(() => {
                             </div>
 
                             <div class="flex flex-col gap-2">
-                                <Link
-                                    :href="
-                                        route('user-temporary-permissions.create')
-                                    "
-                                >
+                                <Link :href="route('user-temporary-permissions.create')">
                                     <Button
                                         :label="$t('Create temporary permission')"
                                         icon="pi pi-plus"
@@ -826,7 +812,11 @@ onBeforeUnmount(() => {
                         >
                             <template #body="{ data }">
                                 <span class="text-slate-600">
-                                    {{ formatDateTime(data.starts_at) }}
+                                    {{
+                                        formatDateTime(data.starts_at, {
+                                            pattern: "yyyy-mm-dd HH:MM",
+                                        })
+                                    }}
                                 </span>
                             </template>
                         </Column>
@@ -839,7 +829,11 @@ onBeforeUnmount(() => {
                         >
                             <template #body="{ data }">
                                 <span class="text-slate-600">
-                                    {{ formatDateTime(data.ends_at) }}
+                                    {{
+                                        formatDateTime(data.ends_at, {
+                                            pattern: "yyyy-mm-dd HH:MM",
+                                        })
+                                    }}
                                 </span>
                             </template>
                         </Column>
@@ -852,7 +846,11 @@ onBeforeUnmount(() => {
                         >
                             <template #body="{ data }">
                                 <span class="text-slate-600">
-                                    {{ formatDateTime(data.updated_at) }}
+                                    {{
+                                        formatDateTime(data.updated_at, {
+                                            pattern: "yyyy-mm-dd HH:MM",
+                                        })
+                                    }}
                                 </span>
                             </template>
                         </Column>

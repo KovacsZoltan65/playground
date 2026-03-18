@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import employeeService from "@/Services/EmployeeService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
+import { formatDateTime } from "@/Support/dates/formatDate";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -114,7 +115,8 @@ const quickStats = computed(() => {
     currentLocale.value;
 
     const activeCount = employees.value.filter((employee) => employee.active).length;
-    const companyCount = new Set(employees.value.map((employee) => employee.company_id)).size;
+    const companyCount = new Set(employees.value.map((employee) => employee.company_id))
+        .size;
 
     return [
         {
@@ -154,7 +156,9 @@ const activeFilters = computed(() => {
 
         filters.push({
             key: "company_id",
-            label: `${trans("Company")}: ${company?.label ?? tableFilters.value.company_id.value}`,
+            label: `${trans("Company")}: ${
+                company?.label ?? tableFilters.value.company_id.value
+            }`,
         });
     }
 
@@ -451,22 +455,6 @@ const editEmployee = (employee) => {
     router.get(route("employees.edit", employee.id));
 };
 
-const formatDateTime = (value) => {
-    if (!value) {
-        return trans("N/A");
-    }
-
-    const date = new Date(value);
-
-    return new Intl.DateTimeFormat(currentLocale.value, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(date);
-};
-
 const restoreVisibleColumns = () => {
     const savedColumns = window.localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
 
@@ -555,11 +543,17 @@ onBeforeUnmount(() => {
                 >
                     <template #content>
                         <div class="rounded-[1.75rem] bg-slate-50 p-5">
-                            <div class="text-sm font-medium text-slate-500">{{ stat.label }}</div>
-                            <div class="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                            <div class="text-sm font-medium text-slate-500">
+                                {{ stat.label }}
+                            </div>
+                            <div
+                                class="mt-3 text-3xl font-semibold tracking-tight text-slate-950"
+                            >
                                 {{ stat.value }}
                             </div>
-                            <div class="mt-2 text-sm text-slate-500">{{ stat.caption }}</div>
+                            <div class="mt-2 text-sm text-slate-500">
+                                {{ stat.caption }}
+                            </div>
                         </div>
                     </template>
                 </Card>
@@ -567,30 +561,48 @@ onBeforeUnmount(() => {
 
             <Card class="app-card border-0">
                 <template #content>
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div
+                        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                    >
                         <div>
-                            <div class="text-sm uppercase tracking-[0.3em] text-emerald-600">
+                            <div
+                                class="text-sm uppercase tracking-[0.3em] text-emerald-600"
+                            >
                                 {{ $t("Directory") }}
                             </div>
-                            <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                            <h1
+                                class="mt-2 text-3xl font-semibold tracking-tight text-slate-950"
+                            >
                                 {{ $t("Employee management") }}
                             </h1>
                             <p class="mt-2 text-slate-500">
-                                {{ $t("Manage employee records with repository-backed CRUD endpoints.") }}
+                                {{
+                                    $t(
+                                        "Manage employee records with repository-backed CRUD endpoints."
+                                    )
+                                }}
                             </p>
                         </div>
 
-                        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-end">
-                            <div class="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200/80 bg-slate-50 px-4 py-3 sm:max-w-[26rem]">
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-end"
+                        >
+                            <div
+                                class="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200/80 bg-slate-50 px-4 py-3 sm:max-w-[26rem]"
+                            >
                                 <div class="flex items-center justify-between gap-3">
-                                    <div class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                                    <div
+                                        class="text-xs font-medium uppercase tracking-[0.2em] text-slate-500"
+                                    >
                                         {{ $t("View options") }}
                                     </div>
                                     <div class="text-xs font-medium text-slate-500">
                                         {{ visibleColumnsSummary }}
                                     </div>
                                 </div>
-                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <div
+                                    class="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                >
                                     <MultiSelect
                                         v-model="visibleColumnKeys"
                                         :options="availableColumns"
@@ -613,7 +625,10 @@ onBeforeUnmount(() => {
                             </div>
                             <div class="flex flex-col gap-2">
                                 <Link :href="route('employees.create')">
-                                    <Button :label="$t('New employee')" icon="pi pi-plus" />
+                                    <Button
+                                        :label="$t('New employee')"
+                                        icon="pi pi-plus"
+                                    />
                                 </Link>
                                 <Button
                                     :label="$t('Refresh')"
@@ -635,13 +650,16 @@ onBeforeUnmount(() => {
                 class="app-card sticky top-24 z-10 border-0"
             >
                 <template #content>
-                    <div class="flex flex-col gap-4 rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div
+                        class="flex flex-col gap-4 rounded-[1.75rem] border border-emerald-200 bg-emerald-50 p-5 lg:flex-row lg:items-center lg:justify-between"
+                    >
                         <div>
                             <div class="text-sm font-medium text-emerald-700">
                                 {{ $t("Selected records") }}
                             </div>
                             <div class="mt-1 text-lg font-semibold text-emerald-950">
-                                {{ selectedEmployees.length }} {{ $t("employees selected") }}
+                                {{ selectedEmployees.length }}
+                                {{ $t("employees selected") }}
                             </div>
                         </div>
 
@@ -703,11 +721,19 @@ onBeforeUnmount(() => {
                         @sort="onSort"
                     >
                         <template #header>
-                            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div
+                                class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
+                            >
                                 <div class="text-sm text-slate-500">
-                                    {{ $t("Repository-backed CRUD with PrimeVue components.") }}
+                                    {{
+                                        $t(
+                                            "Repository-backed CRUD with PrimeVue components."
+                                        )
+                                    }}
                                 </div>
-                                <div class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row">
+                                <div
+                                    class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row"
+                                >
                                     <Button
                                         type="button"
                                         icon="pi pi-filter-slash"
@@ -739,10 +765,16 @@ onBeforeUnmount(() => {
                         <template #empty>
                             <div class="py-10 text-center">
                                 <div class="text-lg font-medium text-slate-700">
-                                    {{ $t("No employees found for the current filters.") }}
+                                    {{
+                                        $t("No employees found for the current filters.")
+                                    }}
                                 </div>
                                 <div class="mt-2 text-sm text-slate-500">
-                                    {{ $t("Try clearing filters or broadening your search.") }}
+                                    {{
+                                        $t(
+                                            "Try clearing filters or broadening your search."
+                                        )
+                                    }}
                                 </div>
                                 <Button
                                     class="mt-4"
@@ -763,6 +795,7 @@ onBeforeUnmount(() => {
 
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
+                        <!-- Company Name -->
                         <Column
                             field="company_name"
                             filter-field="company_id"
@@ -783,11 +816,19 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ data.company_name || $t("N/A") }}</span>
+                                <span class="text-slate-600">{{
+                                    data.company_name || $t("N/A")
+                                }}</span>
                             </template>
                         </Column>
 
-                        <Column field="name" :header="$t('Employee name')" sortable v-if="isColumnVisible('name')">
+                        <!-- Employee Name -->
+                        <Column
+                            field="name"
+                            :header="$t('Employee name')"
+                            sortable
+                            v-if="isColumnVisible('name')"
+                        >
                             <template #filter="{ filterModel, filterCallback }">
                                 <InputText
                                     v-model="filterModel.value"
@@ -797,21 +838,32 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <div class="cursor-pointer py-1" @dblclick="editEmployee(data)">
+                                <div
+                                    class="cursor-pointer py-1"
+                                    @dblclick="editEmployee(data)"
+                                >
                                     <div class="font-medium text-slate-900">
                                         <Link
                                             :href="route('employees.edit', data.id)"
                                             class="inline-flex items-center gap-2 transition hover:text-emerald-700"
                                         >
                                             {{ data.name }}
-                                            <i class="pi pi-arrow-up-right text-xs text-emerald-600" />
+                                            <i
+                                                class="pi pi-arrow-up-right text-xs text-emerald-600"
+                                            />
                                         </Link>
                                     </div>
                                 </div>
                             </template>
                         </Column>
 
-                        <Column field="email" :header="$t('Email')" sortable v-if="isColumnVisible('email')">
+                        <!-- Email -->
+                        <Column
+                            field="email"
+                            :header="$t('Email')"
+                            sortable
+                            v-if="isColumnVisible('email')"
+                        >
                             <template #filter="{ filterModel, filterCallback }">
                                 <InputText
                                     v-model="filterModel.value"
@@ -821,11 +873,19 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ data.email || $t("N/A") }}</span>
+                                <span class="text-slate-600">{{
+                                    data.email || $t("N/A")
+                                }}</span>
                             </template>
                         </Column>
 
-                        <Column field="active" :header="$t('Status')" sortable v-if="isColumnVisible('active')">
+                        <!-- Active -->
+                        <Column
+                            field="active"
+                            :header="$t('Status')"
+                            sortable
+                            v-if="isColumnVisible('active')"
+                        >
                             <template #filter="{ filterModel, filterCallback }">
                                 <Select
                                     v-model="filterModel.value"
@@ -846,20 +906,38 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <Column field="updated_at" :header="$t('Last updated')" sortable v-if="isColumnVisible('updated_at')">
+                        <!-- Updated at -->
+                        <Column
+                            field="updated_at"
+                            :header="$t('Last updated')"
+                            sortable
+                            v-if="isColumnVisible('updated_at')"
+                        >
                             <template #body="{ data }">
-                                <span class="text-slate-600">{{ formatDateTime(data.updated_at) }}</span>
+                                <span class="text-slate-600">{{
+                                    formatDateTime(data.updated_at, {
+                                        pattern: "yyyy-mm-dd HH:MM",
+                                    })
+                                }}</span>
                             </template>
                         </Column>
 
-                        <Column :header="$t('Actions')" header-class="text-right" body-class="text-right">
+                        <!-- Active -->
+                        <Column
+                            :header="$t('Actions')"
+                            header-class="text-right"
+                            body-class="text-right"
+                        >
                             <template #body="{ data }">
                                 <RowActionMenu :items="buildRowActions(data)" />
                             </template>
                         </Column>
                     </DataTable>
 
-                    <div v-if="activeFilters.length > 0" class="mt-5 flex flex-wrap gap-2">
+                    <div
+                        v-if="activeFilters.length > 0"
+                        class="mt-5 flex flex-wrap gap-2"
+                    >
                         <div
                             v-for="filter in activeFilters"
                             :key="filter.key"
@@ -874,7 +952,12 @@ onBeforeUnmount(() => {
                                 <i class="pi pi-times text-xs" />
                             </button>
                         </div>
-                        <Button :label="$t('Clear all filters')" icon="pi pi-times" text @click="clearFilters" />
+                        <Button
+                            :label="$t('Clear all filters')"
+                            icon="pi pi-times"
+                            text
+                            @click="clearFilters"
+                        />
                     </div>
                 </template>
             </Card>
