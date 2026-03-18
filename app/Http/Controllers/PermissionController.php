@@ -117,4 +117,5 @@ class PermissionController extends Controller
             'deleted' => $deletedCount,
         ]);
     }
+
 }

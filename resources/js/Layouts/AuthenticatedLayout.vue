@@ -1,5 +1,6 @@
 <script setup>
 import SidebarUsageTips from '@/Components/SidebarUsageTips.vue';
+import { useColorScheme } from '@/Composables/useColorScheme';
 import { flushQueuedToast } from '@/Support/toast/toastHelpers';
 import { computed, onMounted, ref, watch } from 'vue';
 import { currentLocale, trans } from 'laravel-vue-i18n';
@@ -11,6 +12,7 @@ import { useToast } from 'primevue/usetoast';
 const page = usePage();
 const sidebarOpen = ref(false);
 const toast = useToast();
+const { isDarkScheme, toggleColorScheme } = useColorScheme();
 
 const user = computed(() => page.props.auth.user);
 const userPermissions = computed(() => page.props.auth.permissions ?? []);
@@ -130,15 +132,15 @@ watch(() => page.url, syncQueuedToast);
             <div class="mb-8 flex items-center justify-between">
                 <Link :href="route('dashboard')" class="flex items-center gap-4">
                     <div
-                        class="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-500 to-sky-500 text-xl font-bold text-white shadow-lg shadow-emerald-500/20"
+                        class="app-brand-badge flex h-12 w-12 items-center justify-center rounded-3xl text-xl font-bold text-white"
                     >
                         P
                     </div>
                     <div>
-                        <div class="text-xs uppercase tracking-[0.35em] text-slate-500">
+                        <div class="app-kicker text-xs uppercase tracking-[0.35em]">
                             PrimeVue
                         </div>
-                        <div class="text-2xl font-semibold tracking-tight text-slate-900">
+                        <div class="app-title text-2xl font-semibold tracking-tight">
                             Playground
                         </div>
                     </div>
@@ -146,7 +148,7 @@ watch(() => page.url, syncQueuedToast);
 
                 <button
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+                    class="app-icon-button inline-flex h-10 w-10 items-center justify-center rounded-full transition lg:hidden"
                     @click="sidebarOpen = false"
                 >
                     <i class="pi pi-times text-base"></i>
@@ -154,10 +156,10 @@ watch(() => page.url, syncQueuedToast);
             </div>
 
             <div class="app-sidebar-panel mb-8">
-                <div class="mb-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
+                <div class="app-panel-kicker mb-2 text-xs uppercase tracking-[0.3em]">
                     {{ $t('Sakai style') }}
                 </div>
-                <p class="text-sm leading-6 text-slate-600">
+                <p class="app-copy text-sm leading-6">
                     {{ $t('PrimeVue components power this admin shell on Laravel 12 and Inertia.') }}
                 </p>
             </div>
@@ -168,7 +170,7 @@ watch(() => page.url, syncQueuedToast);
                     :key="section.label"
                     class="space-y-2"
                 >
-                    <div class="px-3 text-xs uppercase tracking-[0.3em] text-slate-400">
+                    <div class="app-section-label px-3 text-xs uppercase tracking-[0.3em]">
                         {{ section.label }}
                     </div>
 
@@ -209,27 +211,25 @@ watch(() => page.url, syncQueuedToast);
                     <div class="flex items-center gap-3">
                         <button
                             type="button"
-                            class="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+                            class="app-icon-button inline-flex h-10 w-10 items-center justify-center rounded-full transition lg:hidden"
                             @click="sidebarOpen = true"
                         >
                             <i class="pi pi-bars text-base"></i>
                         </button>
 
                         <div>
-                            <div
-                                class="text-xs uppercase tracking-[0.3em] text-slate-400"
-                            >
+                            <div class="app-section-label text-xs uppercase tracking-[0.3em]">
                                 {{ $t('Admin workspace') }}
                             </div>
                             <div
                                 v-if="$slots.header"
-                                class="text-2xl font-semibold tracking-tight text-slate-900"
+                                class="app-title text-2xl font-semibold tracking-tight"
                             >
                                 <slot name="header" />
                             </div>
                             <div
                                 v-else
-                                class="text-2xl font-semibold tracking-tight text-slate-900"
+                                class="app-title text-2xl font-semibold tracking-tight"
                             >
                                 {{ $t('Dashboard') }}
                             </div>
@@ -237,18 +237,25 @@ watch(() => page.url, syncQueuedToast);
                     </div>
 
                     <div class="app-user-chip flex items-center gap-3 rounded-full px-3 py-2">
+                        <button
+                            type="button"
+                            class="app-icon-button inline-flex h-10 w-10 items-center justify-center rounded-full transition"
+                            @click="toggleColorScheme"
+                        >
+                            <i :class="isDarkScheme ? 'pi pi-sun' : 'pi pi-moon'" class="text-base"></i>
+                        </button>
                         <Avatar
                             shape="circle"
                             :label="user?.name?.charAt(0)?.toUpperCase() ?? 'U'"
-                            class="bg-emerald-500 text-white"
+                            class="app-avatar text-white"
                         />
                         <div class="hidden text-sm sm:block">
-                            <div class="font-medium text-slate-900">{{ user?.name }}</div>
-                            <div class="text-slate-500">{{ user?.email }}</div>
+                            <div class="app-user-name font-medium">{{ user?.name }}</div>
+                            <div class="app-user-email">{{ user?.email }}</div>
                         </div>
                         <Link
                             :href="route('profile.edit')"
-                            class="text-slate-400 transition hover:text-slate-700"
+                            class="app-icon-link transition"
                         >
                             <i class="pi pi-cog text-lg"></i>
                         </Link>
@@ -256,7 +263,7 @@ watch(() => page.url, syncQueuedToast);
                             :href="route('logout')"
                             method="post"
                             as="button"
-                            class="text-slate-400 transition hover:text-rose-500"
+                            class="app-icon-link app-icon-link-danger transition"
                         >
                             <i class="pi pi-sign-out text-lg"></i>
                         </Link>
