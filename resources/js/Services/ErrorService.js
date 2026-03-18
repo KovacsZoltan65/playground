@@ -3,7 +3,9 @@ import { apiClient } from "@/Services/HttpClient.js";
 
 class ErrorService {
     getLogs(params = {}) {
-        return apiClient.get(route(`activity_logs.fetch`), params);
+        return apiClient.get(route("activity-logs.list"), {
+            params,
+        });
     }
 
     logClientError(error, additionalData = {}) {

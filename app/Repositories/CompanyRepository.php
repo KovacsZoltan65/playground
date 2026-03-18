@@ -20,13 +20,23 @@ class CompanyRepository implements CompanyRepositoryInterface
     {
         $needCache ??= (bool) config('cache.enable_companies', false);
 
+        $sortField = $filters['sort_field'] ?? 'name';
+        $sortDirection = $filters['sort_direction'] ?? 'asc';
         $page = Paginator::resolveCurrentPage('page');
         $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
 
-        $queryCallback = function () use ($filters, $perPage, $page, $appendQuery): LengthAwarePaginator {
-            $paginator = $this->buildIndexQuery($filters)
-                ->orderBy('name')
-                ->paginate($perPage, ['*'], 'page', $page);
+        $queryCallback = function () use (
+            $filters,
+            $perPage,
+            $page,
+            $appendQuery,
+            $sortField,
+            $sortDirection
+        ): LengthAwarePaginator {
+            $query = $this->buildIndexQuery($filters);
+            $this->applySorting($query, $sortField, $sortDirection);
+
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
             $paginator->appends($appendQuery);
 
@@ -145,6 +155,8 @@ class CompanyRepository implements CompanyRepositoryInterface
             'email' => $filters['email'] ?? null,
             'phone' => $filters['phone'] ?? null,
             'is_active' => $filters['is_active'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? 'name',
+            'sort_direction' => $filters['sort_direction'] ?? 'asc',
             'per_page' => $perPage,
             'page' => $page,
         ], fn ($value) => $value !== null && $value !== '');
@@ -158,6 +170,8 @@ class CompanyRepository implements CompanyRepositoryInterface
             'email' => $filters['email'] ?? null,
             'phone' => $filters['phone'] ?? null,
             'is_active' => $filters['is_active'] ?? null,
+            'sort_field' => $filters['sort_field'] ?? 'name',
+            'sort_direction' => $filters['sort_direction'] ?? 'asc',
         ];
 
         $payload = json_encode([
@@ -182,5 +196,24 @@ class CompanyRepository implements CompanyRepositoryInterface
     private function companiesCacheTag(): string
     {
         return Company::getTag();
+    }
+
+    private function applySorting(Builder $query, string $sortField, string $sortDirection): void
+    {
+        $direction = strtolower($sortDirection) === 'desc' ? 'desc' : 'asc';
+
+        $sortableFields = [
+            'name',
+            'email',
+            'phone',
+            'employees_count',
+            'is_active',
+            'updated_at',
+            'created_at',
+        ];
+
+        $field = in_array($sortField, $sortableFields, true) ? $sortField : 'name';
+
+        $query->orderBy($field, $direction)->orderBy('id');
     }
 }

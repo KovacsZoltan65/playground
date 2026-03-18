@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\SidebarTipPage;
 use App\Models\User;
 use App\Models\UserTemporaryPermission;
+use App\Policies\ActivityLogPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\PermissionPolicy;
@@ -14,6 +15,7 @@ use App\Policies\RolePolicy;
 use App\Policies\SidebarTipPagePolicy;
 use App\Policies\UserPolicy;
 use App\Policies\UserTemporaryPermissionPolicy;
+use App\Repositories\ActivityLogRepository;
 use App\Repositories\CompanyRepository;
 use App\Repositories\EmployeeRepository;
 use App\Repositories\PermissionRepository;
@@ -21,6 +23,7 @@ use App\Repositories\RoleRepository;
 use App\Repositories\SidebarTipPageRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\UserTemporaryPermissionRepository;
+use App\Repositories\Contracts\ActivityLogRepositoryInterface;
 use App\Repositories\Contracts\CompanyRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
 use App\Repositories\Contracts\PermissionRepositoryInterface;
@@ -36,6 +39,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -46,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
         $this->app->bind(CompanyRepositoryInterface::class, CompanyRepository::class);
         $this->app->bind(EmployeeRepositoryInterface::class, EmployeeRepository::class);
         $this->app->bind(PermissionRepositoryInterface::class, PermissionRepository::class);
@@ -164,6 +169,7 @@ class AppServiceProvider extends ServiceProvider
             });
         });
 
+        Gate::policy(Activity::class, ActivityLogPolicy::class);
         Gate::policy(Company::class, CompanyPolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);

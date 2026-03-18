@@ -51,6 +51,8 @@ class CompanyController extends Controller
                 'email' => $request->string('email')->toString() ?: null,
                 'phone' => $request->string('phone')->toString() ?: null,
                 'is_active' => $this->normalizeBooleanFilter($request->input('is_active')),
+                'sort_field' => $request->string('sort_field')->toString() ?: 'name',
+                'sort_direction' => $request->string('sort_direction')->toString() ?: 'asc',
             ],
             perPage: (int) $request->integer('per_page', 10),
         );

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\Permissions\ActivityLogPermissions;
 use App\Support\Permissions\CompanyPermissions;
 use App\Support\Permissions\EmployeePermissions;
 use App\Support\Permissions\PermissionPermissions;
@@ -25,6 +26,7 @@ class RoleSeeder extends Seeder
             $userRole = Role::findOrCreate(Roles::USER, 'web');
 
             $adminRole->syncPermissions([
+                ...ActivityLogPermissions::all(),
                 ...CompanyPermissions::all(),
                 ...EmployeePermissions::all(),
                 ...PermissionPermissions::all(),

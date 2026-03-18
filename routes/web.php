@@ -2,6 +2,7 @@
 
 require __DIR__ . '/public.php';
 require __DIR__ . '/dashboard.php';
+require __DIR__ . '/activity-logs.php';
 require __DIR__ . '/frontend-errors.php';
 require __DIR__ . '/companies.php';
 require __DIR__ . '/employees.php';

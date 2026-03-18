@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\Permissions\ActivityLogPermissions;
 use App\Support\Permissions\CompanyPermissions;
 use App\Support\Permissions\EmployeePermissions;
 use App\Support\Permissions\PermissionPermissions;
@@ -20,6 +21,10 @@ class PermissionSeeder extends Seeder
     {
         Activity::withoutLogs(function (): void {
             app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            foreach (ActivityLogPermissions::all() as $permissionName) {
+                Permission::findOrCreate($permissionName, 'web');
+            }
 
             foreach (CompanyPermissions::all() as $permissionName) {
                 Permission::findOrCreate($permissionName, 'web');

@@ -47,6 +47,13 @@ const navigationSections = computed(() => {
             label: trans('Operations'),
             items: [
                 {
+                    label: trans('Activity logs'),
+                    icon: 'pi pi-history',
+                    route: 'activity-logs.index',
+                    activeRoute: 'activity-logs.*',
+                    permission: 'activityLogs.viewAny',
+                },
+                {
                     label: trans('Companies'),
                     icon: 'pi pi-building',
                     route: 'companies.index',

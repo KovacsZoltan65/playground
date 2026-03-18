@@ -134,6 +134,29 @@ it('filters companies by datatable status filter', function () {
         ->assertJsonPath('data.0.is_active', false);
 });
 
+it('sorts companies by employee count descending', function () {
+    $companyWithoutEmployees = Company::factory()->create([
+        'name' => 'No Employees Company',
+    ]);
+    $companyWithEmployees = Company::factory()->create([
+        'name' => 'Many Employees Company',
+    ]);
+
+    Employee::factory()->count(3)->create([
+        'company_id' => $companyWithEmployees->id,
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'sort_field' => 'employees_count',
+        'sort_direction' => 'desc',
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Many Employees Company')
+        ->assertJsonPath('data.1.name', 'No Employees Company');
+});
+
 it('includes employee counts in the company index payload', function () {
     $company = Company::factory()->create([
         'name' => 'Acme Industries',
