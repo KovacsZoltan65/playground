@@ -1,10 +1,12 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
+import CreateModal from "@/Pages/Role/CreateModal.vue";
+import EditModal from "@/Pages/Role/EditModal.vue";
 import roleService from "@/Services/RoleService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { currentLocale, trans } from "laravel-vue-i18n";
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Head } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
@@ -22,6 +24,7 @@ import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
     guardOptions: { type: Array, default: () => [] },
+    permissionOptionsByGuard: { type: Object, default: () => ({}) },
 });
 
 const COLUMN_VISIBILITY_STORAGE_KEY = "role-index-visible-columns";
@@ -32,6 +35,10 @@ const SEARCH_DEBOUNCE_MS = 350;
 const roles = ref([]);
 const selectedRoles = ref([]);
 const loading = ref(false);
+const actionLoading = ref(false);
+const createOpen = ref(false);
+const editOpen = ref(false);
+const editRole = ref(null);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
@@ -257,15 +264,41 @@ const refreshRoles = async () => {
     }
 };
 
+const openCreate = () => {
+    createOpen.value = true;
+};
+
+const openEditModal = async (role) => {
+    actionLoading.value = true;
+
+    try {
+        const response = await roleService.show(role.id);
+        editRole.value = response.data;
+        editOpen.value = true;
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    } finally {
+        actionLoading.value = false;
+    }
+};
+
+const handleSaved = async (message) => {
+    selectedRoles.value = [];
+    await fetchRoles();
+    showSuccessToast(message);
+};
+
 const buildRowActions = (role) => [
     {
         label: trans("Edit"),
         icon: "pi pi-pencil",
-        command: () => router.get(route("roles.edit", role.id)),
+        disabled: actionLoading.value,
+        command: () => openEditModal(role),
     },
     {
         label: trans("Delete"),
         icon: "pi pi-trash",
+        disabled: actionLoading.value,
         command: () => removeRole(role),
     },
 ];
@@ -383,6 +416,19 @@ onBeforeUnmount(() => {
 
         <div class="space-y-6">
             <ConfirmDialog />
+            <CreateModal
+                v-model="createOpen"
+                :guard-options="guardOptions"
+                :permission-options-by-guard="permissionOptionsByGuard"
+                @saved="handleSaved"
+            />
+            <EditModal
+                v-model="editOpen"
+                :role="editRole"
+                :guard-options="guardOptions"
+                :permission-options-by-guard="permissionOptionsByGuard"
+                @saved="handleSaved"
+            />
 
             <div class="grid gap-4 xl:grid-cols-3">
                 <Card
@@ -427,9 +473,11 @@ onBeforeUnmount(() => {
                                 outlined
                                 @click="refreshRoles"
                             />
-                            <Link :href="route('roles.create')">
-                                <Button :label="$t('Create role')" icon="pi pi-plus" />
-                            </Link>
+                            <Button
+                                :label="$t('Create role')"
+                                icon="pi pi-plus"
+                                @click="openCreate"
+                            />
                         </div>
                     </div>
 
@@ -554,15 +602,17 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <div class="cursor-pointer py-1" @dblclick="router.get(route('roles.edit', data.id))">
+                                <div class="cursor-pointer py-1" @dblclick="openEditModal(data)">
                                     <div class="font-medium text-slate-900">
-                                        <Link
-                                            :href="route('roles.edit', data.id)"
+                                        <button
+                                            type="button"
                                             class="inline-flex items-center gap-2 transition hover:text-emerald-700"
+                                            :disabled="actionLoading"
+                                            @click="openEditModal(data)"
                                         >
                                             {{ data.name }}
                                             <i class="pi pi-arrow-up-right text-xs text-emerald-600" />
-                                        </Link>
+                                        </button>
                                     </div>
                                     <div class="mt-1 text-sm text-slate-500">
                                         {{ data.permission_names?.join(", ") || $t("No permissions assigned") }}

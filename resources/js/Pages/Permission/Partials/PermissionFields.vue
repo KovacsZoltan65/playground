@@ -7,6 +7,7 @@ const props = defineProps({
     errors: { type: Object, required: true },
     validation: { type: Object, default: null },
     guardOptions: { type: Array, default: () => [] },
+    disabled: { type: Boolean, default: false },
 });
 
 function resolveValidationField(field) {
@@ -52,6 +53,7 @@ function touchField(field) {
                 id="name"
                 v-model="form.name"
                 class="w-full"
+                :disabled="disabled"
                 :invalid="Boolean(resolveFieldError('name'))"
                 @blur="touchField('name')"
             />
@@ -71,6 +73,7 @@ function touchField(field) {
                 option-label="label"
                 option-value="value"
                 class="w-full"
+                :disabled="disabled"
                 :invalid="Boolean(resolveFieldError('guard_name'))"
                 @change="touchField('guard_name')"
             />

@@ -1,10 +1,12 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
+import CreateModal from "@/Pages/Permission/CreateModal.vue";
+import EditModal from "@/Pages/Permission/EditModal.vue";
 import permissionService from "@/Services/PermissionService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { currentLocale, trans } from "laravel-vue-i18n";
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Head } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import Button from "primevue/button";
 import Card from "primevue/card";
@@ -32,6 +34,10 @@ const SEARCH_DEBOUNCE_MS = 350;
 const permissions = ref([]);
 const selectedPermissions = ref([]);
 const loading = ref(false);
+const actionLoading = ref(false);
+const createOpen = ref(false);
+const editOpen = ref(false);
+const editPermission = ref(null);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
@@ -259,15 +265,41 @@ const refreshPermissions = async () => {
     }
 };
 
+const openCreate = () => {
+    createOpen.value = true;
+};
+
+const openEditModal = async (permission) => {
+    actionLoading.value = true;
+
+    try {
+        const response = await permissionService.show(permission.id);
+        editPermission.value = response.data;
+        editOpen.value = true;
+    } catch (error) {
+        showErrorToast(error?.response?.data?.message);
+    } finally {
+        actionLoading.value = false;
+    }
+};
+
+const handleSaved = async (message) => {
+    selectedPermissions.value = [];
+    await fetchPermissions();
+    showSuccessToast(message);
+};
+
 const buildRowActions = (permission) => [
     {
         label: trans("Edit"),
         icon: "pi pi-pencil",
-        command: () => router.get(route("permissions.edit", permission.id)),
+        disabled: actionLoading.value,
+        command: () => openEditModal(permission),
     },
     {
         label: trans("Delete"),
         icon: "pi pi-trash",
+        disabled: actionLoading.value,
         command: () => removePermission(permission),
     },
 ];
@@ -385,6 +417,17 @@ onBeforeUnmount(() => {
 
         <div class="space-y-6">
             <ConfirmDialog />
+            <CreateModal
+                v-model="createOpen"
+                :guard-options="guardOptions"
+                @saved="handleSaved"
+            />
+            <EditModal
+                v-model="editOpen"
+                :permission="editPermission"
+                :guard-options="guardOptions"
+                @saved="handleSaved"
+            />
 
             <div class="grid gap-4 xl:grid-cols-3">
                 <Card
@@ -429,9 +472,11 @@ onBeforeUnmount(() => {
                                 outlined
                                 @click="refreshPermissions"
                             />
-                            <Link :href="route('permissions.create')">
-                                <Button :label="$t('Create permission')" icon="pi pi-plus" />
-                            </Link>
+                            <Button
+                                :label="$t('Create permission')"
+                                icon="pi pi-plus"
+                                @click="openCreate"
+                            />
                         </div>
                     </div>
 
@@ -556,15 +601,17 @@ onBeforeUnmount(() => {
                                 />
                             </template>
                             <template #body="{ data }">
-                                <div class="cursor-pointer py-1" @dblclick="router.get(route('permissions.edit', data.id))">
+                                <div class="cursor-pointer py-1" @dblclick="openEditModal(data)">
                                     <div class="font-medium text-slate-900">
-                                        <Link
-                                            :href="route('permissions.edit', data.id)"
+                                        <button
+                                            type="button"
                                             class="inline-flex items-center gap-2 transition hover:text-emerald-700"
+                                            :disabled="actionLoading"
+                                            @click="openEditModal(data)"
                                         >
                                             {{ data.name }}
                                             <i class="pi pi-arrow-up-right text-xs text-emerald-600" />
-                                        </Link>
+                                        </button>
                                     </div>
                                     <div class="mt-2">
                                         <Tag

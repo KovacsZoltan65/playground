@@ -24,6 +24,11 @@ class RoleController extends Controller
 
         return Inertia::render('Role/Index', [
             'guardOptions' => PermissionGuards::options(),
+            'permissionOptionsByGuard' => collect(PermissionGuards::options())
+                ->mapWithKeys(fn (array $option) => [
+                    $option['value'] => $this->roleService->permissionOptions($option['value']),
+                ])
+                ->all(),
         ]);
     }
 

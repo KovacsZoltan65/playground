@@ -10,12 +10,24 @@ const props = defineProps({
     validation: { type: Object, default: null },
     guardOptions: { type: Array, default: () => [] },
     permissionOptions: { type: Array, default: () => [] },
+    permissionOptionsByGuard: { type: Object, default: () => ({}) },
+    disabled: { type: Boolean, default: false },
+});
+
+const resolvedPermissionOptions = computed(() => {
+    const guardOptions = props.permissionOptionsByGuard?.[props.form.guard_name];
+
+    if (Array.isArray(guardOptions)) {
+        return guardOptions;
+    }
+
+    return props.permissionOptions;
 });
 
 const groupedPermissionOptions = computed(() => {
     const groups = new Map();
 
-    props.permissionOptions.forEach((option) => {
+    resolvedPermissionOptions.value.forEach((option) => {
         const group = option.group || "Other";
 
         if (!groups.has(group)) {
@@ -74,6 +86,7 @@ function touchField(field) {
                 id="name"
                 v-model="form.name"
                 class="w-full"
+                :disabled="disabled"
                 :invalid="Boolean(resolveFieldError('name'))"
                 @blur="touchField('name')"
             />
@@ -93,6 +106,7 @@ function touchField(field) {
                 option-label="label"
                 option-value="value"
                 class="w-full"
+                :disabled="disabled"
                 :invalid="Boolean(resolveFieldError('guard_name'))"
                 @change="touchField('guard_name')"
             />
@@ -119,6 +133,7 @@ function touchField(field) {
                 filter
                 display="chip"
                 class="w-full"
+                :disabled="disabled"
                 :max-selected-labels="6"
                 :placeholder="$t('Select permissions')"
                 @change="touchField('permission_ids')"
