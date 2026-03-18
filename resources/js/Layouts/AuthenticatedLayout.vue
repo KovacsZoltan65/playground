@@ -125,20 +125,20 @@ watch(() => page.url, syncQueuedToast);
     <div class="app-shell lg:flex">
         <aside
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-            class="fixed inset-y-0 left-0 z-40 flex w-80 flex-col overflow-y-auto border-r border-slate-200/60 bg-slate-950 px-6 py-6 text-white transition-transform duration-300 lg:static lg:h-screen lg:translate-x-0"
+            class="app-sidebar fixed inset-y-0 left-0 z-40 flex w-80 flex-col overflow-y-auto px-6 py-6 transition-transform duration-300 lg:static lg:h-screen lg:translate-x-0"
         >
             <div class="mb-8 flex items-center justify-between">
                 <Link :href="route('dashboard')" class="flex items-center gap-4">
                     <div
-                        class="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 to-sky-400 text-xl font-bold text-slate-950"
+                        class="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-500 to-sky-500 text-xl font-bold text-white shadow-lg shadow-emerald-500/20"
                     >
                         P
                     </div>
                     <div>
-                        <div class="text-xs uppercase tracking-[0.35em] text-slate-400">
+                        <div class="text-xs uppercase tracking-[0.35em] text-slate-500">
                             PrimeVue
                         </div>
-                        <div class="text-2xl font-semibold tracking-tight">
+                        <div class="text-2xl font-semibold tracking-tight text-slate-900">
                             Playground
                         </div>
                     </div>
@@ -146,18 +146,18 @@ watch(() => page.url, syncQueuedToast);
 
                 <button
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-300 transition hover:bg-white/10 hover:text-white lg:hidden"
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
                     @click="sidebarOpen = false"
                 >
                     <i class="pi pi-times text-base"></i>
                 </button>
             </div>
 
-                <div class="mb-8 rounded-[2rem] bg-white/5 p-5 ring-1 ring-white/10">
-                <div class="mb-2 text-xs uppercase tracking-[0.3em] text-emerald-300">
+            <div class="app-sidebar-panel mb-8">
+                <div class="mb-2 text-xs uppercase tracking-[0.3em] text-emerald-600">
                     {{ $t('Sakai style') }}
                 </div>
-                <p class="text-sm leading-6 text-slate-300">
+                <p class="text-sm leading-6 text-slate-600">
                     {{ $t('PrimeVue components power this admin shell on Laravel 12 and Inertia.') }}
                 </p>
             </div>
@@ -168,7 +168,7 @@ watch(() => page.url, syncQueuedToast);
                     :key="section.label"
                     class="space-y-2"
                 >
-                    <div class="px-3 text-xs uppercase tracking-[0.3em] text-slate-500">
+                    <div class="px-3 text-xs uppercase tracking-[0.3em] text-slate-400">
                         {{ section.label }}
                     </div>
 
@@ -195,7 +195,7 @@ watch(() => page.url, syncQueuedToast);
 
         <div
             v-if="sidebarOpen"
-            class="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm lg:hidden"
+            class="fixed inset-0 z-30 bg-slate-900/20 backdrop-blur-sm lg:hidden"
             @click="sidebarOpen = false"
         />
 
@@ -203,7 +203,7 @@ watch(() => page.url, syncQueuedToast);
             <div class="flex h-full min-h-0 flex-col overflow-y-auto">
             <Toast position="top-right" class="app-toast" />
             <header
-                class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/75 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10"
+                class="app-header sticky top-0 z-20 px-4 py-4 sm:px-6 lg:px-10"
             >
                 <div class="flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
@@ -236,9 +236,7 @@ watch(() => page.url, syncQueuedToast);
                         </div>
                     </div>
 
-                    <div
-                        class="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm"
-                    >
+                    <div class="app-user-chip flex items-center gap-3 rounded-full px-3 py-2">
                         <Avatar
                             shape="circle"
                             :label="user?.name?.charAt(0)?.toUpperCase() ?? 'U'"
@@ -266,7 +264,7 @@ watch(() => page.url, syncQueuedToast);
                 </div>
             </header>
 
-            <main class="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+            <main class="app-main flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
                 <slot />
             </main>
             </div>
