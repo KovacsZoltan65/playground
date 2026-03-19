@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\RoleData;
 use App\Repositories\Contracts\PermissionRepositoryInterface;
 use App\Repositories\Contracts\RoleRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 
@@ -18,6 +19,7 @@ class RoleService
 
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
+        /** @var LengthAwarePaginator<int, Role> $paginator */
         $paginator = $this->roles->paginateForIndex($filters, $perPage);
 
         return [

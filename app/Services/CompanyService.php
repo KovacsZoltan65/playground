@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\CompanyData;
 use App\Models\Company;
 use App\Repositories\Contracts\CompanyRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * A cégkezelés alkalmazásszintű use case-eit kiszolgáló service.
@@ -28,6 +29,7 @@ class CompanyService
      */
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
+        /** @var LengthAwarePaginator<int, Company> $paginator */
         $paginator = $this->companies->paginateForIndex($filters, $perPage);
 
         return [

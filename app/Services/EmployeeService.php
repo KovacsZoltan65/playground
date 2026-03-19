@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\EmployeeData;
 use App\Models\Employee;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class EmployeeService
 {
@@ -16,6 +17,7 @@ class EmployeeService
 
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
+        /** @var LengthAwarePaginator<int, Employee> $paginator */
         $paginator = $this->employees->paginateForIndex($filters, $perPage);
 
         return [

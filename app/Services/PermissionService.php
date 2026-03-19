@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\PermissionData;
 use App\Repositories\Contracts\PermissionRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Spatie\Permission\Models\Permission;
 
 class PermissionService
@@ -15,6 +16,7 @@ class PermissionService
 
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
+        /** @var LengthAwarePaginator<int, Permission> $paginator */
         $paginator = $this->permissions->paginateForIndex($filters, $perPage);
 
         return [

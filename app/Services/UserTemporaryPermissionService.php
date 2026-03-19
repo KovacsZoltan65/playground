@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\UserTemporaryPermissionData;
 use App\Models\UserTemporaryPermission;
 use App\Repositories\Contracts\UserTemporaryPermissionRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserTemporaryPermissionService
 {
@@ -15,6 +16,7 @@ class UserTemporaryPermissionService
 
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
+        /** @var LengthAwarePaginator<int, UserTemporaryPermission> $paginator */
         $paginator = $this->assignments->paginateForIndex($filters, $perPage);
 
         return [

@@ -6,6 +6,7 @@ use App\Data\SidebarTipPageData;
 use App\Models\SidebarTipPage;
 use App\Repositories\Contracts\SidebarTipPageRepositoryInterface;
 use App\Support\SidebarTips\SidebarTipTargets;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class SidebarTipPageService
@@ -17,6 +18,7 @@ class SidebarTipPageService
 
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
+        /** @var LengthAwarePaginator<int, SidebarTipPage> $paginator */
         $paginator = $this->sidebarTipPages->paginateForIndex($filters, $perPage);
 
         return [

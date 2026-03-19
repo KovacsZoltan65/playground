@@ -10,6 +10,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserTemporaryPermissionRepository implements UserTemporaryPermissionRepositoryInterface
 {
@@ -173,9 +174,12 @@ class UserTemporaryPermissionRepository implements UserTemporaryPermissionReposi
 
     private function resolveEffectivePermissionIds(User $user): array
     {
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Role> $roles */
+        $roles = $user->roles;
+
         return $user->permissions
             ->pluck('id')
-            ->merge($user->roles->flatMap(fn ($role) => $role->permissions->pluck('id')))
+            ->merge($roles->flatMap(fn (Role $role) => $role->permissions->pluck('id')))
             ->merge($user->temporaryPermissions->pluck('permission_id'))
             ->unique()
             ->values()
