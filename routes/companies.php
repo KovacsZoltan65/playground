@@ -15,6 +15,8 @@ Route::middleware('auth')
         Route::get('/{company}/edit', 'edit')->name('edit');
         Route::get('/{company}', 'show')->name('show');
         Route::post('/', 'store')->name('store');
+
+        // BULK Activate
         Route::patch('/bulk-activate', function () {
             abort_unless(request()->user()?->can('companies.update'), 403);
 
@@ -34,6 +36,8 @@ Route::middleware('auth')
                 'count' => count($validated['ids']),
             ]);
         })->name('bulk-activate');
+
+        // BULK DEACTIVATE
         Route::patch('/bulk-deactivate', function () {
             abort_unless(request()->user()?->can('companies.update'), 403);
 
@@ -53,6 +57,8 @@ Route::middleware('auth')
                 'count' => count($validated['ids']),
             ]);
         })->name('bulk-deactivate');
+
+        // TOGGLE ACTIVATE
         Route::patch('/{company}/toggle-active', 'toggleActiveStatus')->name('toggle-active');
         Route::delete('/', 'bulkDestroy')->name('bulk-destroy');
         Route::put('/{company}', 'update')->name('update');
