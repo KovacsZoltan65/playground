@@ -105,7 +105,9 @@ return [
 
     'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_'),
 
-    'enable_companies' => false,
+    'tag_debug' => false,
+
+    'enable_companies' => true,
     'companies_ttl' => 300,
     'enable_employees' => false,
     'employees_ttl' => 300,

@@ -34,6 +34,7 @@ class CompanyRepository implements CompanyRepositoryInterface
 
         $sortField = $filters['sort_field'] ?? 'name';
         $sortDirection = $filters['sort_direction'] ?? 'asc';
+        $includeEmployeeCount = $this->shouldIncludeEmployeeCount($filters);
         $page = Paginator::resolveCurrentPage('page');
         $appendQuery = $this->buildAppendQuery($filters, $perPage, $page);
 
@@ -43,9 +44,10 @@ class CompanyRepository implements CompanyRepositoryInterface
             $page,
             $appendQuery,
             $sortField,
-            $sortDirection
+            $sortDirection,
+            $includeEmployeeCount
         ): LengthAwarePaginator {
-            $query = $this->buildIndexQuery($filters);
+            $query = $this->buildIndexQuery($filters, $includeEmployeeCount);
             $this->applySorting($query, $sortField, $sortDirection);
 
             $paginator = $query->paginate($perPage, ['*'], 'page', $page);
@@ -121,6 +123,32 @@ class CompanyRepository implements CompanyRepositoryInterface
     }
 
     /**
+     * @param  array<int, int>  $ids
+     * @return list<Company>
+     */
+    public function bulkSetActiveStatus(array $ids, bool $isActive): array
+    {
+        Company::query()
+            ->whereIn('id', $ids)
+            ->update([
+                'is_active' => $isActive,
+                'updated_at' => now(),
+            ]);
+
+        $this->flushListCache();
+
+        /** @var array<int, Company> $updatedCompanies */
+        $updatedCompanies = Company::query()
+            ->whereIn('id', $ids)
+            ->get()
+            ->sortBy(fn (Company $company) => array_search($company->id, $ids, true))
+            ->values()
+            ->all();
+
+        return $updatedCompanies;
+    }
+
+    /**
      * @return list<array{value:int,label:string}>
      */
     public function optionsForSelect(): array
@@ -140,30 +168,51 @@ class CompanyRepository implements CompanyRepositoryInterface
      * @param  array<string, mixed>  $filters
      * @return Builder<Company>
      */
-    private function buildIndexQuery(array $filters = []): Builder
+    private function buildIndexQuery(array $filters = [], bool $includeEmployeeCount = false): Builder
     {
-        $search = $filters['global'] ?? null;
-        $name = $filters['name'] ?? null;
-        $email = $filters['email'] ?? null;
-        $phone = $filters['phone'] ?? null;
+        $search = $this->normalizeSearchTerm($filters['global'] ?? null);
+        $name = $this->normalizeSearchTerm($filters['name'] ?? null);
+        $email = $this->normalizeSearchTerm($filters['email'] ?? null);
+        $phone = $this->normalizeSearchTerm($filters['phone'] ?? null);
         $isActive = $filters['is_active'] ?? null;
 
-        return Company::query()
-            ->withCount('employees')
-            ->when($search, function ($query, $searchTerm) {
-                $query->where(function ($companyQuery) use ($searchTerm) {
-                    $companyQuery
-                        ->where('name', 'like', "%{$searchTerm}%")
-                        ->orWhere('email', 'like', "%{$searchTerm}%")
-                        ->orWhere('phone', 'like', "%{$searchTerm}%");
-                });
-            })
-            ->when($name, fn ($query, $value) => $query->where('name', 'like', "%{$value}%"))
-            ->when($email, fn ($query, $value) => $query->where('email', 'like', "%{$value}%"))
-            ->when($phone, fn ($query, $value) => $query->where('phone', 'like', "%{$value}%"))
-            ->when($isActive !== null, function ($query) use ($isActive) {
-                $query->where('is_active', $isActive);
+        $query = Company::query();
+
+        // Az alkalmazotti darabszámot csak akkor számoljuk ki, ha a kliens tényleg használja.
+        if ($includeEmployeeCount) {
+            $query->withCount('employees');
+        }
+
+        // A globális keresés rugalmas marad, ezért itt továbbra is contains minta fut.
+        if ($search !== null) {
+            $containsPattern = $this->buildContainsLikePattern($search);
+
+            $query->where(function (Builder $companyQuery) use ($containsPattern): void {
+                $companyQuery
+                    ->where('name', 'like', $containsPattern)
+                    ->orWhere('email', 'like', $containsPattern)
+                    ->orWhere('phone', 'like', $containsPattern);
             });
+        }
+
+        // Az oszlopszűrők prefix keresést használnak, hogy jobban együtt tudjanak működni az indexekkel.
+        if ($name !== null) {
+            $query->where('name', 'like', $this->buildPrefixLikePattern($name));
+        }
+
+        if ($email !== null) {
+            $query->where('email', 'like', $this->buildPrefixLikePattern($email));
+        }
+
+        if ($phone !== null) {
+            $query->where('phone', 'like', $this->buildPrefixLikePattern($phone));
+        }
+
+        if ($isActive !== null) {
+            $query->where('is_active', $isActive);
+        }
+
+        return $query;
     }
 
     /**
@@ -178,6 +227,7 @@ class CompanyRepository implements CompanyRepositoryInterface
             'email' => $filters['email'] ?? null,
             'phone' => $filters['phone'] ?? null,
             'is_active' => $filters['is_active'] ?? null,
+            'include_employee_count' => $filters['include_employee_count'] ?? false,
             'sort_field' => $filters['sort_field'] ?? 'name',
             'sort_direction' => $filters['sort_direction'] ?? 'asc',
             'per_page' => $perPage,
@@ -193,6 +243,7 @@ class CompanyRepository implements CompanyRepositoryInterface
             'email' => $filters['email'] ?? null,
             'phone' => $filters['phone'] ?? null,
             'is_active' => $filters['is_active'] ?? null,
+            'include_employee_count' => $filters['include_employee_count'] ?? false,
             'sort_field' => $filters['sort_field'] ?? 'name',
             'sort_direction' => $filters['sort_direction'] ?? 'asc',
         ];
@@ -219,6 +270,50 @@ class CompanyRepository implements CompanyRepositoryInterface
     private function companiesCacheTag(): string
     {
         return Company::getTag();
+    }
+
+    /**
+     * A kliens explicit jelzése alapján csak akkor számoljuk ki az employee countot,
+     * ha a felhasználó tényleg megjeleníti vagy rendezéshez használja ezt az oszlopot.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function shouldIncludeEmployeeCount(array $filters): bool
+    {
+        if (($filters['sort_field'] ?? null) === 'employees_count') {
+            return true;
+        }
+
+        return filter_var(
+            $filters['include_employee_count'] ?? false,
+            FILTER_VALIDATE_BOOL
+        ) === true;
+    }
+
+    private function normalizeSearchTerm(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalizedValue = trim($value);
+
+        return $normalizedValue === '' ? null : $normalizedValue;
+    }
+
+    private function buildPrefixLikePattern(string $value): string
+    {
+        return $this->escapeLikeValue($value).'%';
+    }
+
+    private function buildContainsLikePattern(string $value): string
+    {
+        return '%'.$this->escapeLikeValue($value).'%';
+    }
+
+    private function escapeLikeValue(string $value): string
+    {
+        return addcslashes($value, '\\%_');
     }
 
     /**

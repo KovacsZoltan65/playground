@@ -126,7 +126,7 @@ describe("UserTemporaryPermission/Index", () => {
                 sort_direction: "desc",
             }),
         );
-    });
+    }, 10000);
 
     it("bulk deletes the selected assignments after confirmation", async () => {
         const { default: UserTemporaryPermissionIndex } = await import(

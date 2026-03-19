@@ -134,6 +134,64 @@ it('filters companies by datatable status filter', function () {
         ->assertJsonPath('data.0.is_active', false);
 });
 
+it('uses prefix matching for the dedicated company name filter', function () {
+    Company::factory()->create([
+        'name' => 'Acme Industries',
+    ]);
+    Company::factory()->create([
+        'name' => 'North Acme Holdings',
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'name' => 'Acme',
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Acme Industries');
+});
+
+it('uses prefix matching for the dedicated email filter', function () {
+    Company::factory()->create([
+        'name' => 'Acme Industries',
+        'email' => 'contact@acme.test',
+    ]);
+    Company::factory()->create([
+        'name' => 'Beta Logistics',
+        'email' => 'ops-contact@acme.test',
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'email' => 'contact@',
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Acme Industries');
+});
+
+it('uses prefix matching for the dedicated phone filter', function () {
+    Company::factory()->create([
+        'name' => 'Acme Industries',
+        'phone' => '+36 30 123 4567',
+    ]);
+    Company::factory()->create([
+        'name' => 'Beta Logistics',
+        'phone' => '00 +36 30 123 4567',
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'phone' => '+36 30',
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.name', 'Acme Industries');
+});
+
 it('sorts companies by employee count descending', function () {
     $companyWithoutEmployees = Company::factory()->create([
         'name' => 'No Employees Company',
@@ -180,6 +238,25 @@ it('includes employee counts in the company index payload', function () {
         ->assertJsonPath('data.0.employees_count', 3)
         ->assertJsonPath('data.1.name', 'Beta Logistics')
         ->assertJsonPath('data.1.employees_count', 1);
+});
+
+it('skips employee counts when the column is not requested', function () {
+    $company = Company::factory()->create([
+        'name' => 'Acme Industries',
+    ]);
+
+    Employee::factory()->count(3)->create([
+        'company_id' => $company->id,
+    ]);
+
+    $response = $this->actingAs(userWithRole(Roles::USER))->getJson(route('companies.list', [
+        'include_employee_count' => false,
+    ]));
+
+    $response
+        ->assertOk()
+        ->assertJsonPath('data.0.name', 'Acme Industries')
+        ->assertJsonPath('data.0.employees_count', 0);
 });
 
 it('invalidates cached company lists after creating a company', function () {

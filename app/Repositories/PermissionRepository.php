@@ -114,14 +114,19 @@ class PermissionRepository implements PermissionRepositoryInterface
     private function buildIndexQuery(array $filters = []): Builder
     {
         $search = $filters['global'] ?? null;
-        $name = $filters['name'] ?? null;
+        $name = $this->normalizeSearchTerm($filters['name'] ?? null);
         $guardName = $filters['guard_name'] ?? null;
 
-        return Permission::query()
+        $query = Permission::query()
             ->withCount('roles')
             ->when($search, fn (Builder $query, $value) => $query->whereLike(['name', 'guard_name'], $value))
-            ->when($name, fn (Builder $query, $value) => $query->where('name', 'like', "%{$value}%"))
             ->when($guardName, fn (Builder $query, $value) => $query->where('guard_name', $value));
+
+        if ($name !== null) {
+            $query->where('name', 'like', $this->buildPrefixLikePattern($name));
+        }
+
+        return $query;
     }
 
     private function buildAppendQuery(array $filters, int $perPage, int $page): array
@@ -171,6 +176,27 @@ class PermissionRepository implements PermissionRepositoryInterface
     private function rolesCacheTag(): string
     {
         return 'roles';
+    }
+
+    private function normalizeSearchTerm(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalizedValue = trim($value);
+
+        return $normalizedValue === '' ? null : $normalizedValue;
+    }
+
+    private function buildPrefixLikePattern(string $value): string
+    {
+        return $this->escapeLikeValue($value).'%';
+    }
+
+    private function escapeLikeValue(string $value): string
+    {
+        return addcslashes($value, '\\%_');
     }
 
     private function applySorting(Builder $query, string $sortField, string $sortDirection): void

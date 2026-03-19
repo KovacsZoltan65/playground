@@ -133,17 +133,25 @@ class UserRepository implements UserRepositoryInterface
     private function buildIndexQuery(array $filters = []): Builder
     {
         $search = $filters['global'] ?? null;
-        $name = $filters['name'] ?? null;
-        $email = $filters['email'] ?? null;
+        $name = $this->normalizeSearchTerm($filters['name'] ?? null);
+        $email = $this->normalizeSearchTerm($filters['email'] ?? null);
         $roleId = $filters['role_id'] ?? null;
 
-        return User::query()
+        $query = User::query()
             ->with('roles:id,name,guard_name')
             ->withCount('roles')
             ->when($search, fn (Builder $query, $value) => $this->applyGlobalSearch($query, (string) $value))
-            ->when($name, fn (Builder $query, $value) => $query->where('name', 'like', "%{$value}%"))
-            ->when($email, fn (Builder $query, $value) => $query->where('email', 'like', "%{$value}%"))
             ->when($roleId, fn (Builder $query, $value) => $query->whereHas('roles', fn (Builder $roleQuery) => $roleQuery->where('roles.id', (int) $value)));
+
+        if ($name !== null) {
+            $query->where('name', 'like', $this->buildPrefixLikePattern($name));
+        }
+
+        if ($email !== null) {
+            $query->where('email', 'like', $this->buildPrefixLikePattern($email));
+        }
+
+        return $query;
     }
 
     private function applyGlobalSearch(Builder $query, string $search): Builder
@@ -205,6 +213,27 @@ class UserRepository implements UserRepositoryInterface
     private function usersCacheTag(): string
     {
         return 'users';
+    }
+
+    private function normalizeSearchTerm(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalizedValue = trim($value);
+
+        return $normalizedValue === '' ? null : $normalizedValue;
+    }
+
+    private function buildPrefixLikePattern(string $value): string
+    {
+        return $this->escapeLikeValue($value).'%';
+    }
+
+    private function escapeLikeValue(string $value): string
+    {
+        return addcslashes($value, '\\%_');
     }
 
     private function applySorting(Builder $query, string $sortField, string $sortDirection): void

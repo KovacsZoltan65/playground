@@ -13,16 +13,18 @@ import {
 
 const listMock = vi.fn();
 const bulkActivateMock = vi.fn();
+const bulkDeactivateMock = vi.fn();
+const toggleActiveStatusMock = vi.fn();
 const requestConfirmationMock = vi.fn();
 
 vi.mock("@/Services/CompanyService", () => ({
     default: {
         list: listMock,
         bulkActivate: bulkActivateMock,
-        bulkDeactivate: vi.fn(),
+        bulkDeactivate: bulkDeactivateMock,
         bulkDestroy: vi.fn(),
         destroy: vi.fn(),
-        toggleActiveStatus: vi.fn(),
+        toggleActiveStatus: toggleActiveStatusMock,
     },
 }));
 
@@ -95,6 +97,18 @@ describe("Company/Index", () => {
             ]),
         );
         bulkActivateMock.mockResolvedValue({});
+        bulkDeactivateMock.mockResolvedValue({ data: [] });
+        toggleActiveStatusMock.mockResolvedValue({
+            data: {
+                id: 1,
+                name: "Acme",
+                email: "info@acme.test",
+                phone: "123",
+                employees_count: 12,
+                is_active: false,
+                updated_at: "2026-03-18 11:00:00",
+            },
+        });
         requestConfirmationMock.mockResolvedValue(true);
     });
 
@@ -113,8 +127,39 @@ describe("Company/Index", () => {
 
         expect(listMock).toHaveBeenLastCalledWith(
             expect.objectContaining({
+                include_employee_count: true,
                 sort_field: "employees_count",
                 sort_direction: "asc",
+            }),
+        );
+    });
+
+    it("debounces column filters before reloading the company list", async () => {
+        const { default: CompanyIndex } = await import("@/Pages/Company/Index.vue");
+
+        const wrapper = mountPage(CompanyIndex);
+        await flushPromises();
+
+        const nameFilterInput = wrapper.find('[data-test-id="filter-name"] input');
+
+        await nameFilterInput.setValue("A");
+        await nameFilterInput.setValue("Ac");
+        await flushPromises();
+
+        expect(listMock).toHaveBeenCalledTimes(1);
+
+        vi.advanceTimersByTime(349);
+        await flushPromises();
+
+        expect(listMock).toHaveBeenCalledTimes(1);
+
+        vi.advanceTimersByTime(1);
+        await flushPromises();
+
+        expect(listMock).toHaveBeenCalledTimes(2);
+        expect(listMock).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                name: "Ac",
             }),
         );
     });
@@ -143,5 +188,21 @@ describe("Company/Index", () => {
 
         expect(requestConfirmationMock).toHaveBeenCalledTimes(1);
         expect(bulkActivateMock).toHaveBeenCalledWith([1]);
+    });
+
+    it("updates the visible row locally after toggling the company status", async () => {
+        const { default: CompanyIndex } = await import("@/Pages/Company/Index.vue");
+
+        const wrapper = mountPage(CompanyIndex);
+        await flushPromises();
+
+        const toggleButton = wrapper.find('[data-test-id="row-action-deactivate"]');
+
+        await toggleButton.trigger("click");
+        await flushPromises();
+
+        expect(toggleActiveStatusMock).toHaveBeenCalledWith(1);
+        expect(listMock).toHaveBeenCalledTimes(1);
+        expect(wrapper.text()).toContain("Inactive");
     });
 });

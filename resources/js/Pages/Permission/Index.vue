@@ -6,6 +6,7 @@ import EditModal from "@/Pages/Permission/EditModal.vue";
 import { formatDateTime } from "@/Support/dates/formatDate";
 import permissionService from "@/Services/PermissionService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
+import { createDebouncedRequestManager } from "@/Support/tables/createDebouncedRequestManager";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -41,7 +42,7 @@ const editOpen = ref(false);
 const editPermission = ref(null);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
-let searchDebounceTimer = null;
+const debouncedRequests = createDebouncedRequestManager(SEARCH_DEBOUNCE_MS);
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -185,6 +186,12 @@ const showErrorToast = (detail = trans("Action failed.")) => {
     });
 };
 
+const scheduleColumnFilter = (filterKey, filterCallback) => {
+    debouncedRequests.schedule(`column-filter:${filterKey}`, async () => {
+        filterCallback();
+    });
+};
+
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
     tableState.perPage = event.rows;
@@ -318,6 +325,7 @@ const buildRowActions = (permission) => [
 ];
 
 const clearFilters = async () => {
+    debouncedRequests.clearAll();
     searchInput.value = "";
     tableFilters.value = {
         global: { value: null, matchMode: "contains" },
@@ -330,9 +338,11 @@ const clearFilters = async () => {
 
 const clearSingleFilter = async (key) => {
     if (key === "global") {
+        debouncedRequests.clear("global-search");
         searchInput.value = "";
         tableFilters.value.global.value = null;
     } else if (tableFilters.value[key]) {
+        debouncedRequests.clear(`column-filter:${key}`);
         tableFilters.value[key].value = null;
     }
 
@@ -380,24 +390,14 @@ const persistVisibleColumns = () => {
 };
 
 watch(searchInput, (value) => {
-    if (searchDebounceTimer) {
-        window.clearTimeout(searchDebounceTimer);
-    }
-
-    searchDebounceTimer = window.setTimeout(async () => {
+    debouncedRequests.schedule("global-search", async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
         await fetchPermissions();
-    }, SEARCH_DEBOUNCE_MS);
+    });
 });
 
-watch(
-    visibleColumnKeys,
-    () => {
-        persistVisibleColumns();
-    },
-    { deep: true }
-);
+watch(visibleColumnKeys, persistVisibleColumns, { deep: true });
 
 onMounted(async () => {
     restoreVisibleColumns();
@@ -405,9 +405,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-    if (searchDebounceTimer) {
-        window.clearTimeout(searchDebounceTimer);
-    }
+    debouncedRequests.clearAll();
 });
 </script>
 
@@ -637,7 +635,7 @@ onBeforeUnmount(() => {
                                     v-model="filterModel.value"
                                     class="w-full"
                                     :placeholder="$t('Permission name')"
-                                    @input="filterCallback()"
+                                    @input="scheduleColumnFilter('name', filterCallback)"
                                 />
                             </template>
                             <template #body="{ data }">
@@ -699,7 +697,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Roles Count -->
                         <Column
                             field="roles_count"
                             :header="$t('Assigned roles')"

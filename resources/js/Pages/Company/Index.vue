@@ -44,8 +44,8 @@ const selectedCompanies = ref([]);
 const loading = ref(false);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
-let searchDebounceTimer = null;
 let isProgrammaticSearchUpdate = false;
+const requestDebounceTimers = new Map();
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -115,6 +115,12 @@ const selectedColumnsLabel = computed(() =>
     trans(":count columns visible", {
         count: visibleColumnKeys.value.length,
     })
+);
+
+const shouldIncludeEmployeeCount = computed(
+    () =>
+        visibleColumnKeys.value.includes("employees_count") ||
+        tableState.sortField === "employees_count"
 );
 
 const statusOptions = computed(() => {
@@ -209,6 +215,7 @@ const fetchCompanies = async () => {
             email: tableFilters.value.email.value || undefined,
             phone: tableFilters.value.phone.value || undefined,
             is_active: tableFilters.value.is_active.value ?? undefined,
+            include_employee_count: shouldIncludeEmployeeCount.value,
             sort_field: tableState.sortField,
             sort_direction: tableState.sortOrder === -1 ? "desc" : "asc",
             page: tableState.page,
@@ -239,6 +246,66 @@ const showErrorToast = (detail = trans("Action failed.")) => {
         life: 4000,
     });
 };
+
+const clearDebouncedRequest = (key) => {
+    const timerId = requestDebounceTimers.get(key);
+
+    if (timerId !== undefined) {
+        window.clearTimeout(timerId);
+        requestDebounceTimers.delete(key);
+    }
+};
+
+const clearAllDebouncedRequests = () => {
+    requestDebounceTimers.forEach((timerId) => window.clearTimeout(timerId));
+    requestDebounceTimers.clear();
+};
+
+// A listaoldali kéréseket kulcsonként debounce-oljuk, hogy a különböző filterek ne árasszák el a backendet.
+const scheduleDebouncedRequest = (key, callback) => {
+    clearDebouncedRequest(key);
+
+    const timerId = window.setTimeout(async () => {
+        requestDebounceTimers.delete(key);
+        await callback();
+    }, SEARCH_DEBOUNCE_MS);
+
+    requestDebounceTimers.set(key, timerId);
+};
+
+const scheduleColumnFilter = (filterKey, filterCallback) => {
+    scheduleDebouncedRequest(`column-filter:${filterKey}`, async () => {
+        filterCallback();
+    });
+};
+
+// A backend válaszával frissítjük a látható sorokat, így státuszváltásnál nem kell mindig teljes listát újratölteni.
+const syncCompanies = (updatedCompanies) => {
+    if (!Array.isArray(updatedCompanies) || updatedCompanies.length === 0) {
+        return;
+    }
+
+    const companiesById = new Map(
+        updatedCompanies.map((company) => [company.id, company])
+    );
+
+    companies.value = companies.value.map((company) =>
+        companiesById.has(company.id)
+            ? { ...company, ...companiesById.get(company.id) }
+            : company
+    );
+
+    selectedCompanies.value = selectedCompanies.value.map((company) =>
+        companiesById.has(company.id)
+            ? { ...company, ...companiesById.get(company.id) }
+            : company
+    );
+};
+
+// Státuszváltás után csak akkor maradunk lokális frissítésnél, ha a sor helye biztosan nem változik.
+const shouldUseLocalStatusSync = () =>
+    tableFilters.value.is_active.value === null &&
+    !["is_active", "updated_at"].includes(tableState.sortField);
 
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
@@ -345,12 +412,15 @@ const activateSelectedCompanies = async () => {
     }
 
     try {
-        await companyService.bulkActivate(
+        const response = await companyService.bulkActivate(
             selectedCompanies.value.map((company) => company.id)
         );
+        if (shouldUseLocalStatusSync()) {
+            syncCompanies(response.data);
+        } else {
+            await fetchCompanies();
+        }
         selectedCompanies.value = [];
-
-        await fetchCompanies();
         showSuccessToast(trans("Companies activated successfully."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
@@ -378,12 +448,15 @@ const deactivateSelectedCompanies = async () => {
     }
 
     try {
-        await companyService.bulkDeactivate(
+        const response = await companyService.bulkDeactivate(
             selectedCompanies.value.map((company) => company.id)
         );
+        if (shouldUseLocalStatusSync()) {
+            syncCompanies(response.data);
+        } else {
+            await fetchCompanies();
+        }
         selectedCompanies.value = [];
-
-        await fetchCompanies();
         showSuccessToast(trans("Companies deactivated successfully."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
@@ -392,8 +465,12 @@ const deactivateSelectedCompanies = async () => {
 
 const toggleCompanyActiveStatus = async (company) => {
     try {
-        await companyService.toggleActiveStatus(company.id);
-        await fetchCompanies();
+        const response = await companyService.toggleActiveStatus(company.id);
+        if (shouldUseLocalStatusSync()) {
+            syncCompanies([response.data]);
+        } else {
+            await fetchCompanies();
+        }
         showSuccessToast(trans("Company status updated successfully."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
@@ -428,6 +505,8 @@ const buildRowActions = (company) => [
 ];
 
 const clearFilters = async () => {
+    isProgrammaticSearchUpdate = true;
+    clearAllDebouncedRequests();
     searchInput.value = "";
     tableFilters.value = {
         global: {
@@ -453,6 +532,7 @@ const clearFilters = async () => {
     };
     tableState.page = 1;
     await fetchCompanies();
+    isProgrammaticSearchUpdate = false;
 };
 
 const isColumnVisible = (columnKey) => visibleColumnKeys.value.includes(columnKey);
@@ -464,16 +544,17 @@ const resetVisibleColumns = () => {
 const clearSingleFilter = async (filterKey) => {
     if (filterKey === "global") {
         isProgrammaticSearchUpdate = true;
+        clearDebouncedRequest("global-search");
         searchInput.value = "";
         tableFilters.value.global.value = null;
         tableState.page = 1;
         await fetchCompanies();
         isProgrammaticSearchUpdate = false;
         return;
-    } else {
-        tableFilters.value[filterKey].value = null;
     }
 
+    clearDebouncedRequest(`column-filter:${filterKey}`);
+    tableFilters.value[filterKey].value = null;
     tableState.page = 1;
     await fetchCompanies();
 };
@@ -526,7 +607,7 @@ const restoreVisibleColumns = () => {
 
 watch(
     visibleColumnKeys,
-    (columns) => {
+    async (columns, previousColumns) => {
         if (columns.length === 0) {
             visibleColumnKeys.value = [MINIMUM_VISIBLE_COLUMN_KEY];
             return;
@@ -536,6 +617,13 @@ watch(
             COLUMN_VISIBILITY_STORAGE_KEY,
             JSON.stringify(columns)
         );
+
+        const wasEmployeeCountVisible = previousColumns?.includes("employees_count") ?? false;
+        const isEmployeeCountVisible = columns.includes("employees_count");
+
+        if (!wasEmployeeCountVisible && isEmployeeCountVisible) {
+            await fetchCompanies();
+        }
     },
     { deep: true }
 );
@@ -546,15 +634,11 @@ watch(searchInput, (value) => {
         return;
     }
 
-    if (searchDebounceTimer !== null) {
-        window.clearTimeout(searchDebounceTimer);
-    }
-
-    searchDebounceTimer = window.setTimeout(async () => {
+    scheduleDebouncedRequest("global-search", async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
         await fetchCompanies();
-    }, SEARCH_DEBOUNCE_MS);
+    });
 });
 
 onMounted(async () => {
@@ -564,9 +648,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-    if (searchDebounceTimer !== null) {
-        window.clearTimeout(searchDebounceTimer);
-    }
+    clearAllDebouncedRequests();
 });
 </script>
 
@@ -854,7 +936,7 @@ onBeforeUnmount(() => {
                                     v-model="filterModel.value"
                                     class="w-full"
                                     :placeholder="$t('Company name')"
-                                    @input="filterCallback()"
+                                    @input="scheduleColumnFilter('name', filterCallback)"
                                 />
                             </template>
                             <template #body="{ data }">
@@ -897,7 +979,7 @@ onBeforeUnmount(() => {
                                     v-model="filterModel.value"
                                     class="w-full"
                                     :placeholder="$t('Email')"
-                                    @input="filterCallback()"
+                                    @input="scheduleColumnFilter('email', filterCallback)"
                                 />
                             </template>
                             <template #body="{ data }">
@@ -918,7 +1000,7 @@ onBeforeUnmount(() => {
                                     v-model="filterModel.value"
                                     class="w-full"
                                     :placeholder="$t('Phone')"
-                                    @input="filterCallback()"
+                                    @input="scheduleColumnFilter('phone', filterCallback)"
                                 />
                             </template>
                             <template #body="{ data }">

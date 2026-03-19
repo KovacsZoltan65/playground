@@ -19,5 +19,11 @@ interface CompanyRepositoryInterface
 
     public function bulkDeleteByIds(array $ids): int;
 
+    /**
+     * @param  array<int, int>  $ids
+     * @return list<Company>
+     */
+    public function bulkSetActiveStatus(array $ids, bool $isActive): array;
+
     public function optionsForSelect(): array;
 }

@@ -72,6 +72,18 @@ class CompanyService
         return CompanyData::fromModel($updatedCompany);
     }
 
+    /**
+     * @param  array<int, int>  $ids
+     * @return list<CompanyData>
+     */
+    public function bulkSetActiveStatus(array $ids, bool $isActive): array
+    {
+        return array_map(
+            static fn (Company $company): CompanyData => CompanyData::fromModel($company),
+            $this->companies->bulkSetActiveStatus($ids, $isActive),
+        );
+    }
+
     public function delete(Company $company): bool
     {
         return $this->companies->delete($company);

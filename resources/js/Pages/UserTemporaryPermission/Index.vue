@@ -4,6 +4,7 @@ import RowActionMenu from "@/Components/RowActionMenu.vue";
 import userTemporaryPermissionService from "@/Services/UserTemporaryPermissionService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { formatDateTime } from "@/Support/dates/formatDate";
+import { createDebouncedRequestManager } from "@/Support/tables/createDebouncedRequestManager";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -43,8 +44,8 @@ const selectedAssignments = ref([]);
 const loading = ref(false);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
-let searchDebounceTimer = null;
 let isProgrammaticSearchUpdate = false;
+const debouncedRequests = createDebouncedRequestManager(SEARCH_DEBOUNCE_MS);
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -340,6 +341,7 @@ const buildRowActions = (assignment) => [
 ];
 
 const clearFilters = async () => {
+    debouncedRequests.clearAll();
     searchInput.value = "";
     tableFilters.value = {
         global: { value: null, matchMode: "contains" },
@@ -358,6 +360,7 @@ const resetVisibleColumns = () => {
 const clearSingleFilter = async (key) => {
     if (key === "global") {
         isProgrammaticSearchUpdate = true;
+        debouncedRequests.clear("global-search");
         searchInput.value = "";
         tableFilters.value.global.value = null;
         tableState.page = 1;
@@ -441,15 +444,11 @@ watch(searchInput, (value) => {
         return;
     }
 
-    if (searchDebounceTimer) {
-        window.clearTimeout(searchDebounceTimer);
-    }
-
-    searchDebounceTimer = window.setTimeout(async () => {
+    debouncedRequests.schedule("global-search", async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
         await fetchAssignments();
-    }, SEARCH_DEBOUNCE_MS);
+    });
 });
 
 onMounted(async () => {
@@ -459,9 +458,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-    if (searchDebounceTimer) {
-        window.clearTimeout(searchDebounceTimer);
-    }
+    debouncedRequests.clearAll();
 });
 </script>
 

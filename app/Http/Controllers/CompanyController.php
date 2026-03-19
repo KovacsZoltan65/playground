@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Data\CompanyData;
 use App\Models\Company;
 use App\Services\CompanyService;
+use App\Support\Permissions\CompanyPermissions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -51,6 +52,7 @@ class CompanyController extends Controller
                 'email' => $request->string('email')->toString() ?: null,
                 'phone' => $request->string('phone')->toString() ?: null,
                 'is_active' => $this->normalizeBooleanFilter($request->input('is_active')),
+                'include_employee_count' => $request->boolean('include_employee_count', true),
                 'sort_field' => $request->string('sort_field')->toString() ?: 'name',
                 'sort_direction' => $request->string('sort_direction')->toString() ?: 'asc',
             ],
@@ -129,6 +131,32 @@ class CompanyController extends Controller
         return response()->json([
             'message' => __('Companies deleted successfully.'),
             'deleted' => $deletedCount,
+        ]);
+    }
+
+    public function bulkActivate(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can(CompanyPermissions::UPDATE), 403);
+
+        return response()->json([
+            'message' => __('Companies activated successfully.'),
+            'data' => $this->companyService->bulkSetActiveStatus(
+                CompanyData::validateBulkIds($request),
+                true,
+            ),
+        ]);
+    }
+
+    public function bulkDeactivate(Request $request): JsonResponse
+    {
+        abort_unless($request->user()?->can(CompanyPermissions::UPDATE), 403);
+
+        return response()->json([
+            'message' => __('Companies deactivated successfully.'),
+            'data' => $this->companyService->bulkSetActiveStatus(
+                CompanyData::validateBulkIds($request),
+                false,
+            ),
         ]);
     }
 

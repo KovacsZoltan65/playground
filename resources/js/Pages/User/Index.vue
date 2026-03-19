@@ -4,6 +4,7 @@ import RowActionMenu from "@/Components/RowActionMenu.vue";
 import userService from "@/Services/UserService";
 import { requestConfirmation } from "@/Support/confirm/requestConfirmation";
 import { formatDateTime } from "@/Support/dates/formatDate";
+import { createDebouncedRequestManager } from "@/Support/tables/createDebouncedRequestManager";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -41,8 +42,8 @@ const selectedUsers = ref([]);
 const loading = ref(false);
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
-let searchDebounceTimer = null;
 let isProgrammaticSearchUpdate = false;
+const debouncedRequests = createDebouncedRequestManager(SEARCH_DEBOUNCE_MS);
 const confirm = useConfirm();
 const toast = useToast();
 
@@ -210,6 +211,12 @@ const showErrorToast = (detail = trans("Action failed.")) => {
     });
 };
 
+const scheduleColumnFilter = (filterKey, filterCallback) => {
+    debouncedRequests.schedule(`column-filter:${filterKey}`, async () => {
+        filterCallback();
+    });
+};
+
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
     tableState.perPage = event.rows;
@@ -336,6 +343,7 @@ const buildRowActions = (user) => [
 ];
 
 const clearFilters = async () => {
+    debouncedRequests.clearAll();
     searchInput.value = "";
     tableFilters.value = {
         global: { value: null, matchMode: "contains" },
@@ -356,6 +364,7 @@ const resetVisibleColumns = () => {
 const clearSingleFilter = async (filterKey) => {
     if (filterKey === "global") {
         isProgrammaticSearchUpdate = true;
+        debouncedRequests.clear("global-search");
         searchInput.value = "";
         tableFilters.value.global.value = null;
         tableState.page = 1;
@@ -364,6 +373,7 @@ const clearSingleFilter = async (filterKey) => {
         return;
     }
 
+    debouncedRequests.clear(`column-filter:${filterKey}`);
     tableFilters.value[filterKey].value = null;
     tableState.page = 1;
     await fetchUsers();
@@ -438,15 +448,11 @@ watch(searchInput, (value) => {
         return;
     }
 
-    if (searchDebounceTimer !== null) {
-        window.clearTimeout(searchDebounceTimer);
-    }
-
-    searchDebounceTimer = window.setTimeout(async () => {
+    debouncedRequests.schedule("global-search", async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
         await fetchUsers();
-    }, SEARCH_DEBOUNCE_MS);
+    });
 });
 
 onMounted(async () => {
@@ -456,9 +462,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-    if (searchDebounceTimer !== null) {
-        window.clearTimeout(searchDebounceTimer);
-    }
+    debouncedRequests.clearAll();
 });
 </script>
 
@@ -730,7 +734,7 @@ onBeforeUnmount(() => {
                                     v-model="filterModel.value"
                                     class="w-full"
                                     :placeholder="$t('User name')"
-                                    @input="filterCallback()"
+                                    @input="scheduleColumnFilter('name', filterCallback)"
                                 />
                             </template>
                             <template #body="{ data }">
@@ -773,7 +777,7 @@ onBeforeUnmount(() => {
                                     v-model="filterModel.value"
                                     class="w-full"
                                     :placeholder="$t('Email')"
-                                    @input="filterCallback()"
+                                    @input="scheduleColumnFilter('email', filterCallback)"
                                 />
                             </template>
                             <template #body="{ data }">

@@ -57,12 +57,20 @@ class CompanyData extends Data
     /**
      * @return array<int, int>
      */
-    public static function validateBulkDeleteIds(Request $request): array
+    public static function validateBulkIds(Request $request): array
     {
         return Validator::make($request->all(), [
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'distinct', 'exists:companies,id'],
         ])->validate()['ids'];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public static function validateBulkDeleteIds(Request $request): array
+    {
+        return self::validateBulkIds($request);
     }
 
     public static function rules(?ValidationContext $context = null): array

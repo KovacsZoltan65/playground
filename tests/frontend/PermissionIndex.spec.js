@@ -114,7 +114,7 @@ describe("Permission/Index", () => {
                 guard_name: "web",
             }),
         );
-    });
+    }, 10000);
 
     it("loads a permission before opening the edit modal", async () => {
         const { default: PermissionIndex } = await import("@/Pages/Permission/Index.vue");

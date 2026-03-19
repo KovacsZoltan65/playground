@@ -111,11 +111,11 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     {
         $search = $filters['global'] ?? null;
         $companyId = $filters['company_id'] ?? null;
-        $name = $filters['name'] ?? null;
-        $email = $filters['email'] ?? null;
+        $name = $this->normalizeSearchTerm($filters['name'] ?? null);
+        $email = $this->normalizeSearchTerm($filters['email'] ?? null);
         $active = $filters['active'] ?? null;
 
-        return Employee::query()
+        $query = Employee::query()
             ->with('company:id,name')
             ->when($search, function ($query, $searchTerm) {
                 $query->where(function ($employeeQuery) use ($searchTerm) {
@@ -126,9 +126,17 @@ class EmployeeRepository implements EmployeeRepositoryInterface
                 });
             })
             ->when($companyId, fn ($query, $value) => $query->where('company_id', $value))
-            ->when($name, fn ($query, $value) => $query->where('name', 'like', "%{$value}%"))
-            ->when($email, fn ($query, $value) => $query->where('email', 'like', "%{$value}%"))
             ->when($active !== null, fn ($query) => $query->where('active', $active));
+
+        if ($name !== null) {
+            $query->where('name', 'like', $this->buildPrefixLikePattern($name));
+        }
+
+        if ($email !== null) {
+            $query->where('email', 'like', $this->buildPrefixLikePattern($email));
+        }
+
+        return $query;
     }
 
     private function buildAppendQuery(array $filters, int $perPage, int $page): array
@@ -178,6 +186,27 @@ class EmployeeRepository implements EmployeeRepositoryInterface
     private function employeesCacheTag(): string
     {
         return Employee::getTag();
+    }
+
+    private function normalizeSearchTerm(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalizedValue = trim($value);
+
+        return $normalizedValue === '' ? null : $normalizedValue;
+    }
+
+    private function buildPrefixLikePattern(string $value): string
+    {
+        return $this->escapeLikeValue($value).'%';
+    }
+
+    private function escapeLikeValue(string $value): string
+    {
+        return addcslashes($value, '\\%_');
     }
 
     private function applySorting(Builder $query, string $sortField, string $sortDirection): void

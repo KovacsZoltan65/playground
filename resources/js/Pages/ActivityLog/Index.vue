@@ -3,6 +3,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import activityLogService from "@/Services/ActivityLogService.js";
 import { formatDateTime } from "@/Support/dates/formatDate";
+import { createDebouncedRequestManager } from "@/Support/tables/createDebouncedRequestManager";
 import { currentLocale, trans } from "laravel-vue-i18n";
 import { Head } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
@@ -42,8 +43,8 @@ const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const selectedActivity = ref(null);
 const detailsVisible = ref(false);
 const searchInput = ref("");
-let searchDebounceTimer = null;
 let isProgrammaticSearchUpdate = false;
+const debouncedRequests = createDebouncedRequestManager(SEARCH_DEBOUNCE_MS);
 const toast = useToast();
 
 const tableFilters = ref({
@@ -223,6 +224,7 @@ const onSort = async (event) => {
 };
 
 const clearFilters = async () => {
+    debouncedRequests.clearAll();
     searchInput.value = "";
     tableFilters.value = {
         global: { value: null, matchMode: "contains" },
@@ -251,6 +253,7 @@ const resetVisibleColumns = () => {
 const clearSingleFilter = async (filterKey) => {
     if (filterKey === "global") {
         isProgrammaticSearchUpdate = true;
+        debouncedRequests.clear("global-search");
         searchInput.value = "";
         tableFilters.value.global.value = null;
         tableState.page = 1;
@@ -363,15 +366,11 @@ watch(searchInput, (value) => {
         return;
     }
 
-    if (searchDebounceTimer) {
-        window.clearTimeout(searchDebounceTimer);
-    }
-
-    searchDebounceTimer = window.setTimeout(async () => {
+    debouncedRequests.schedule("global-search", async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
         await fetchActivities();
-    }, SEARCH_DEBOUNCE_MS);
+    });
 });
 
 onMounted(async () => {
@@ -381,9 +380,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
-    if (searchDebounceTimer) {
-        window.clearTimeout(searchDebounceTimer);
-    }
+    debouncedRequests.clearAll();
 });
 </script>
 
