@@ -795,7 +795,6 @@ onBeforeUnmount(() => {
 
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
-                        <!-- Company Name -->
                         <Column
                             field="company_name"
                             filter-field="company_id"
@@ -822,7 +821,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Employee Name -->
                         <Column
                             field="name"
                             :header="$t('Employee name')"
@@ -857,7 +855,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Email -->
                         <Column
                             field="email"
                             :header="$t('Email')"
@@ -879,7 +876,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Active -->
                         <Column
                             field="active"
                             :header="$t('Status')"
@@ -906,7 +902,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Updated at -->
                         <Column
                             field="updated_at"
                             :header="$t('Last updated')"
@@ -922,7 +917,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Active -->
                         <Column
                             :header="$t('Actions')"
                             header-class="text-right"

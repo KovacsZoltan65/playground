@@ -13,6 +13,10 @@ import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+/**
+ * A frontend hibalog payloadba kerülő metaadatot biztonságosan stringgé alakítja.
+ */
 const stringifyMetadata = (value) => {
     try {
         return typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -21,11 +25,14 @@ const stringifyMetadata = (value) => {
     }
 };
 
+/**
+ * A globális frontend hibakezelők által összegyűjtött hibát továbbítja a backend felé.
+ */
 const sendFrontendError = async (payload) => {
     try {
         await window.axios.post(route('frontend-errors.store'), payload);
     } catch {
-        // Avoid recursive client-side logging if the logging request itself fails.
+        // Ha maga a logolási kérés bukik el, nem indítunk újabb kliensoldali hibalogot.
     }
 };
 

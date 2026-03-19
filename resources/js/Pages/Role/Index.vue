@@ -624,7 +624,6 @@ onBeforeUnmount(() => {
 
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
-                        <!-- Name -->
                         <Column
                             field="name"
                             :header="$t('Role name')"
@@ -667,7 +666,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Guard Name -->
                         <Column
                             field="guard_name"
                             :header="$t('Guard')"
@@ -691,7 +689,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Permissions Count -->
                         <Column
                             field="permissions_count"
                             :header="$t('Assigned permissions')"
@@ -705,7 +702,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Updated At -->
                         <Column
                             field="updated_at"
                             :header="$t('Last updated')"

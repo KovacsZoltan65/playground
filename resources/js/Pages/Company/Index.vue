@@ -1,5 +1,10 @@
 <script setup>
-// Közös layout és komponensek az oldal felépítéséhez.
+/**
+ * A cégkezelő admin listaoldal szerveroldali szűréssel, rendezéssel és tömeges műveletekkel.
+ *
+ * Ez a projekt referencia PrimeVue index oldala: az oszlopnézet egy része böngészőoldalon
+ * marad meg, miközben a listaadatok és a műveletek minden esetben backend végponton futnak át.
+ */
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import RowActionMenu from "@/Components/RowActionMenu.vue";
 import companyService from "@/Services/CompanyService";
@@ -22,9 +27,7 @@ import Tag from "primevue/tag";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 
-// A látható oszlopok böngészőoldali mentésének kulcsa ehhez a táblához.
 const COLUMN_VISIBILITY_STORAGE_KEY = "company-index-visible-columns";
-// Alapértelmezett üzleti oszlopok, amelyek első betöltéskor látszanak.
 const DEFAULT_VISIBLE_COLUMN_KEYS = [
     "name",
     "email",
@@ -36,11 +39,9 @@ const DEFAULT_VISIBLE_COLUMN_KEYS = [
 const MINIMUM_VISIBLE_COLUMN_KEY = "name";
 const SEARCH_DEBOUNCE_MS = 350;
 
-// A backendről betöltött rekordok és a DataTable fő állapotai.
 const companies = ref([]);
 const selectedCompanies = ref([]);
 const loading = ref(false);
-// A felhasználó által kiválasztott, látható oszlopkulcsok listája.
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const searchInput = ref("");
 let searchDebounceTimer = null;
@@ -48,7 +49,6 @@ let isProgrammaticSearchUpdate = false;
 const confirm = useConfirm();
 const toast = useToast();
 
-// A PrimeVue DataTable szűrőmodellje.
 const tableFilters = ref({
     global: {
         value: null,
@@ -72,7 +72,6 @@ const tableFilters = ref({
     },
 });
 
-// Szerveroldali lapozás kliensoldali állapota.
 const tableState = reactive({
     page: 1,
     perPage: 10,
@@ -80,7 +79,6 @@ const tableState = reactive({
     sortOrder: 1,
 });
 
-// A backendtől kapott lapozási metaadatok.
 const meta = reactive({
     current_page: 1,
     last_page: 1,
@@ -88,7 +86,6 @@ const meta = reactive({
     total: 0,
 });
 
-// A MultiSelect oszlopválasztó opciói lokalizált feliratokkal.
 const availableColumns = computed(() => {
     currentLocale.value;
 
@@ -102,7 +99,6 @@ const availableColumns = computed(() => {
     ];
 });
 
-// Kompakt felirat a nézetbeállítás triggerhez.
 const visibleColumnsSummary = computed(() => {
     currentLocale.value;
 
@@ -121,7 +117,6 @@ const selectedColumnsLabel = computed(() =>
     })
 );
 
-// A státusz oszlop szűrőjének választható opciói.
 const statusOptions = computed(() => {
     currentLocale.value;
 
@@ -132,7 +127,6 @@ const statusOptions = computed(() => {
     ];
 });
 
-// Gyors statisztikák a jelenleg betöltött oldal rekordjai alapján.
 const quickStats = computed(() => {
     currentLocale.value;
 
@@ -160,7 +154,6 @@ const quickStats = computed(() => {
     ];
 });
 
-// Az aktív szűrők listája gyors áttekintéshez és egyenkénti törléshez.
 const activeFilters = computed(() => {
     currentLocale.value;
 
@@ -206,7 +199,6 @@ const activeFilters = computed(() => {
     return filters;
 });
 
-// A céglista lekérése az aktuális szűrők és lapozási állapot alapján.
 const fetchCompanies = async () => {
     loading.value = true;
 
@@ -248,14 +240,12 @@ const showErrorToast = (detail = trans("Action failed.")) => {
     });
 };
 
-// Lapozó esemény kezelése.
 const onPage = async (event) => {
     tableState.page = Math.floor(event.first / event.rows) + 1;
     tableState.perPage = event.rows;
     await fetchCompanies();
 };
 
-// Szűrőváltozás kezelése.
 const onFilter = async (event) => {
     tableFilters.value = event.filters;
     tableState.page = 1;
@@ -269,7 +259,6 @@ const onSort = async (event) => {
     await fetchCompanies();
 };
 
-// Egyetlen cég törlése megerősítés után.
 const removeCompany = async (company) => {
     const accepted = await requestConfirmation(confirm, {
         message: trans("Delete :name?", { name: company.name }),
@@ -298,7 +287,6 @@ const removeCompany = async (company) => {
     }
 };
 
-// Több kijelölt cég törlése egyszerre.
 const removeSelectedCompanies = async () => {
     if (selectedCompanies.value.length === 0) {
         return;
@@ -336,7 +324,6 @@ const removeSelectedCompanies = async () => {
     }
 };
 
-// Több kijelölt cég aktiválása egyszerre.
 const activateSelectedCompanies = async () => {
     if (selectedCompanies.value.length === 0) {
         return;
@@ -370,7 +357,6 @@ const activateSelectedCompanies = async () => {
     }
 };
 
-// Több kijelölt cég deaktiválása egyszerre.
 const deactivateSelectedCompanies = async () => {
     if (selectedCompanies.value.length === 0) {
         return;
@@ -404,7 +390,6 @@ const deactivateSelectedCompanies = async () => {
     }
 };
 
-// Aktív státusz váltása a soron, majd a lista frissítése.
 const toggleCompanyActiveStatus = async (company) => {
     try {
         await companyService.toggleActiveStatus(company.id);
@@ -424,7 +409,6 @@ const refreshCompanies = async () => {
     }
 };
 
-// A soronkénti műveleti menü elemei.
 const buildRowActions = (company) => [
     {
         label: trans("Edit"),
@@ -443,7 +427,6 @@ const buildRowActions = (company) => [
     },
 ];
 
-// Minden táblaszűrő alaphelyzetbe állítása.
 const clearFilters = async () => {
     searchInput.value = "";
     tableFilters.value = {
@@ -472,15 +455,12 @@ const clearFilters = async () => {
     await fetchCompanies();
 };
 
-// Segédfüggvény annak eldöntésére, hogy egy oszlop látható-e.
 const isColumnVisible = (columnKey) => visibleColumnKeys.value.includes(columnKey);
 
-// Az oszlopválasztó visszaállítása az alapértelmezett oszlopokra.
 const resetVisibleColumns = () => {
     visibleColumnKeys.value = [...DEFAULT_VISIBLE_COLUMN_KEYS];
 };
 
-// Egy szűrőcímke eltávolítása az aktív szűrők sávból.
 const clearSingleFilter = async (filterKey) => {
     if (filterKey === "global") {
         isProgrammaticSearchUpdate = true;
@@ -498,12 +478,10 @@ const clearSingleFilter = async (filterKey) => {
     await fetchCompanies();
 };
 
-// Egy rekord szerkesztőoldalára navigál.
 const editCompany = (company) => {
     router.get(route("companies.edit", company.id));
 };
 
-// Emberi olvasásra alkalmas rekordminőség címke.
 const getContactHealth = (company) => {
     if (company.email && company.phone) {
         return {
@@ -518,8 +496,7 @@ const getContactHealth = (company) => {
     };
 };
 
-// A mentett oszlopbeállítás visszaállítása a localStorage-ból.
-// Hibás vagy elavult kulcsok esetén biztonságosan visszaáll az alapállapot.
+// A tárolt oszlopkulcsok hibás vagy már nem támogatott beállítás esetén visszaállnak az alapnézetre.
 const restoreVisibleColumns = () => {
     const savedColumns = window.localStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
 
@@ -547,7 +524,6 @@ const restoreVisibleColumns = () => {
     }
 };
 
-// Az oszlopválasztás minden módosítását azonnal elmenti böngészőoldalra.
 watch(
     visibleColumnKeys,
     (columns) => {
@@ -564,7 +540,7 @@ watch(
     { deep: true }
 );
 
-// A globális kereső debounce-olva frissíti a DataTable filter modellt.
+// A globális keresés debounce-olva frissíti a filter modellt, hogy ne fusson kérés minden leütésre.
 watch(searchInput, (value) => {
     if (isProgrammaticSearchUpdate) {
         return;
@@ -581,7 +557,6 @@ watch(searchInput, (value) => {
     }, SEARCH_DEBOUNCE_MS);
 });
 
-// Oldalbetöltéskor visszaállítja a mentett oszlopnézetet, majd lekéri az adatokat.
 onMounted(async () => {
     restoreVisibleColumns();
     searchInput.value = tableFilters.value.global.value ?? "";
@@ -596,14 +571,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <!-- Böngészőfül címének beállítása. -->
     <Head :title="$t('Companies')" />
 
-    <!-- Az oldal a hitelesített felhasználói layouton belül jelenik meg. -->
     <AuthenticatedLayout>
         <ConfirmDialog />
 
-        <!-- A layout fejléc slotjába kerülő oldalnév. -->
         <template #header>{{ $t("Companies") }}</template>
 
         <div class="app-grid">
@@ -631,7 +603,6 @@ onBeforeUnmount(() => {
                 </Card>
             </section>
 
-            <!-- Felső információs kártya címmel, leírással és elsődleges műveletekkel. -->
             <Card class="app-card border-0">
                 <template #content>
                     <div
@@ -674,7 +645,6 @@ onBeforeUnmount(() => {
                                     </div>
                                 </div>
 
-                                <!-- View options -->
                                 <div
                                     class="flex flex-col gap-2 sm:flex-row sm:items-center"
                                 >
@@ -699,9 +669,7 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
 
-                            <!-- New and Refresh -->
                             <div class="flex flex-col gap-2">
-                                <!-- New button -->
                                 <Link :href="route('companies.create')">
                                     <Button
                                         :label="$t('New company')"
@@ -709,7 +677,6 @@ onBeforeUnmount(() => {
                                     />
                                 </Link>
 
-                                <!-- REFRESH -->
                                 <Button
                                     :label="$t('Refresh')"
                                     icon="pi pi-refresh"
@@ -776,7 +743,6 @@ onBeforeUnmount(() => {
                 </template>
             </Card>
 
-            <!-- A céglista szerveroldali DataTable-ben jelenik meg. -->
             <Card class="app-card border-0">
                 <template #content>
                     <DataTable
@@ -802,7 +768,6 @@ onBeforeUnmount(() => {
                         @filter="onFilter"
                         @sort="onSort"
                     >
-                        <!-- Táblafejléc: oszlopválasztó, szűrő törlés és globális keresés. -->
                         <template #header>
                             <div
                                 class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
@@ -826,7 +791,6 @@ onBeforeUnmount(() => {
                                         @click="clearFilters"
                                     />
                                     <IconField>
-                                        <!-- A globális keresőmező ikonos burkolóeleme. -->
                                         <InputIcon>
                                             <i class="pi pi-search" />
                                         </InputIcon>
@@ -846,7 +810,6 @@ onBeforeUnmount(() => {
                             </span>
                         </template>
 
-                        <!-- Üres állapot, ha a jelenlegi szűrésre nincs találat. -->
                         <template #empty>
                             <div class="py-10 text-center">
                                 <div class="text-lg font-medium text-slate-700">
@@ -878,10 +841,8 @@ onBeforeUnmount(() => {
                             </div>
                         </template>
 
-                        <!-- Tömeges kijelöléshez szükséges fix checkbox oszlop. -->
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
-                        <!-- Cégnév oszlop saját szűrőmezővel és kiegészítő címinformációval. -->
                         <Column
                             field="name"
                             :header="$t('Company name')"
@@ -925,7 +886,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- E-mail oszlop saját szűrőmezővel. -->
                         <Column
                             field="email"
                             :header="$t('Email')"
@@ -947,7 +907,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Telefonszám oszlop saját szűrőmezővel. -->
                         <Column
                             field="phone"
                             :header="$t('Phone')"
@@ -982,7 +941,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Státusz oszlop select alapú szűrővel. -->
                         <Column
                             field="is_active"
                             :header="$t('Status')"
@@ -1024,7 +982,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Soronkénti műveletek fix jobb oldali oszlopban. -->
                         <Column
                             :header="$t('Actions')"
                             header-class="text-right"

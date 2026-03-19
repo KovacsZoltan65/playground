@@ -11,11 +11,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * A cégekhez tartozó alkalmazotti rekordokat reprezentáló Eloquent modell.
+ */
 class Employee extends Model
 {
     /** @use HasFactory<EmployeeFactory> */
     use HasFactory, LogsActivity, SoftDeletes;
 
+    /** @var list<string> */
     protected $fillable = [
         'company_id',
         'name',
@@ -23,6 +27,9 @@ class Employee extends Model
         'active',
     ];
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
@@ -30,21 +37,23 @@ class Employee extends Model
             'deleted_at' => 'datetime',
         ];
     }
-    
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('active', APP_ACTIVE);
     }
 
+    /**
+     * @return BelongsTo<Company, $this>
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
-    
-    /*
-     * ========================= LOGOLÁS =========================
-     */
-    
+    /** Activity log channel used for employee changes. */
     protected string $logName = 'employees';
 
     public static function getTag(): string
@@ -60,8 +69,4 @@ class Employee extends Model
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
-    
-    /**
-     * ===========================================================
-     */
 }

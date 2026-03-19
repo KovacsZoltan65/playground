@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -10,6 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
+/**
+ * Az autentikált felhasználókat és a hozzájuk tartozó jogosultsági kapcsolatokat kezelő modell.
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -52,11 +54,18 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * @return HasMany<UserTemporaryPermission, $this>
+     */
     public function temporaryPermissions(): HasMany
     {
         return $this->hasMany(UserTemporaryPermission::class);
     }
 
+    /**
+     * @param  \BackedEnum|int|string|\Spatie\Permission\Contracts\Permission  $permission
+     * @param  string|null  $guardName
+     */
     public function hasPermissionTo($permission, $guardName = null): bool
     {
         if ($this->spatieHasPermissionTo($permission, $guardName)) {
@@ -65,18 +74,23 @@ class User extends Authenticatable
 
         $resolvedPermission = $this->filterPermission($permission, $guardName);
 
-        return $this->temporaryPermissions()
+        return UserTemporaryPermission::query()
             ->activeAt()
+            ->whereBelongsTo($this, 'user')
             ->where('permission_id', $resolvedPermission->getKey())
             ->exists();
     }
 
+    /**
+     * @return Collection<int, \Spatie\Permission\Models\Permission>
+     */
     public function getAllPermissions(): Collection
     {
         $permanentPermissions = $this->spatieGetAllPermissions();
 
-        $temporaryPermissions = $this->temporaryPermissions()
+        $temporaryPermissions = UserTemporaryPermission::query()
             ->activeAt()
+            ->whereBelongsTo($this, 'user')
             ->with('permission')
             ->get()
             ->pluck('permission')

@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * A bejelentkezési képernyőt és a session alapú autentikáció életciklusát kezeli.
+ */
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Megjeleníti a bejelentkezési oldalt.
      */
     public function create(): Response
     {
@@ -25,7 +28,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Feldolgozza a bejelentkezési kérést és újragenerálja a session azonosítót.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
@@ -37,7 +40,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Destroy an authenticated session.
+     * Kilépteti a felhasználót és érvényteleníti az aktuális sessiont.
      */
     public function destroy(Request $request): RedirectResponse
     {

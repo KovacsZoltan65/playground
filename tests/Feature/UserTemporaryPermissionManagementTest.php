@@ -26,6 +26,9 @@ beforeEach(function () {
     ]);
 });
 
+/**
+ * Létrehoz egy felhasználót a megadott szerepkörrel a permission alapú feature tesztekhez.
+ */
 function temporaryPermissionUserWithRole(string $role): User
 {
     $user = User::factory()->create();
@@ -34,6 +37,9 @@ function temporaryPermissionUserWithRole(string $role): User
     return $user;
 }
 
+/**
+ * A tesztekben gyakran ismétlődő ideiglenes jogosultság-hozzárendelés rövid segédfüggvénye.
+ */
 function assignTemporaryPermission(User $user, string $permissionName, string $startsAt, string $endsAt, ?string $reason = null): UserTemporaryPermission
 {
     $permission = Permission::findByName($permissionName, 'web');
@@ -81,6 +87,7 @@ it('returns effective user permission ids for create-page permission filtering',
         '2026-03-20 18:00:00',
     );
 
+    // Az effective permission lista az aktuális időpont alapján számolja bele az éppen aktív ideiglenes jogosultságot.
     $this->travelTo(now()->setDate(2026, 3, 18)->setTime(12, 0));
 
     $ids = app(UserTemporaryPermissionService::class)->userEffectivePermissionIds()[$targetUser->id] ?? [];

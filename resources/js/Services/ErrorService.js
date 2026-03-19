@@ -1,13 +1,25 @@
 import { v4 as uuidv4 } from "uuid";
 import { apiClient } from "@/Services/HttpClient.js";
 
+/**
+ * A kliensoldali hibák összegyűjtését és továbbítását végző szolgáltatás.
+ */
 class ErrorService {
+    /**
+     * Lekéri az activity log alapú frontend hibanapló bejegyzéseket.
+     */
     getLogs(params = {}) {
         return apiClient.get(route("activity-logs.list"), {
             params,
         });
     }
 
+    /**
+     * A hibát a backend felé küldhető payload-dá alakítja.
+     *
+     * A plusz mezőket változatlanul továbbadja, ezért a hívó oldalak
+     * kategória- vagy kontextusspecifikus adatokat is csatolhatnak.
+     */
     logClientError(error, additionalData = {}) {
         const payload = {
             message: error.message,
@@ -17,12 +29,12 @@ class ErrorService {
             priority: additionalData.priority || "low",
             data: additionalData.data || null,
             info: error.info || "No additional info",
-            additionalInfo: additionalData.additionalInfo || null, // Külön mezőként kerül mentésre
+            additionalInfo: additionalData.additionalInfo || null,
             time: new Date().toISOString(),
             route: window.location.pathname,
             url: window.location.href,
             userAgent: navigator.userAgent,
-            uniqueErrorId: uuidv4(), // Egyedi azonosító generálása kliens oldalon
+            uniqueErrorId: uuidv4(),
             ...additionalData,
         };
 

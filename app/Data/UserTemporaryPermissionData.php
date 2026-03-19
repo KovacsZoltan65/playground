@@ -11,6 +11,9 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 use Spatie\Permission\Models\Permission;
 
+/**
+ * Az ideiglenes jogosultság-hozzárendelések űrlap- és lista DTO-ja.
+ */
 class UserTemporaryPermissionData extends Data
 {
     public function __construct(
@@ -59,6 +62,9 @@ class UserTemporaryPermissionData extends Data
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     public static function validateBulkDeleteIds(Request $request): array
     {
         return Validator::make($request->all(), [
@@ -102,7 +108,7 @@ class UserTemporaryPermissionData extends Data
                         $overlapQuery = UserTemporaryPermission::query()
                             ->where('user_id', $userId)
                             ->where('permission_id', (int) $value)
-                            ->where(function ($query) use ($startsAt, $endsAt): void {
+                            ->where(function (\Illuminate\Database\Eloquent\Builder $query) use ($startsAt, $endsAt): void {
                                 $query
                                     ->where('starts_at', '<=', $endsAt)
                                     ->where('ends_at', '>=', $startsAt);
@@ -121,6 +127,9 @@ class UserTemporaryPermissionData extends Data
         );
     }
 
+    /**
+     * @return array{user_id:int,permission_id:int,starts_at:string,ends_at:string,reason:?string}
+     */
     public function toRepositoryAttributes(): array
     {
         return [

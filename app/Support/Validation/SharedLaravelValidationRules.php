@@ -5,9 +5,17 @@ namespace App\Support\Validation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
 
+/**
+ * A közös JSON sémákból Laravel-kompatibilis validációs szabályokat épít.
+ *
+ * Ez a réteg biztosítja, hogy a backend validáció ugyanabból a forrásból készüljön,
+ * mint a frontend gyors visszajelzéseihez használt séma.
+ */
 final class SharedLaravelValidationRules
 {
     /**
+     * A séma meződefinícióit Laravel rule tömbökké alakítja.
+     *
      * @param  array<string, mixed>  $context
      * @return array<string, array<int, mixed>>
      */
@@ -26,6 +34,8 @@ final class SharedLaravelValidationRules
     }
 
     /**
+     * Egy mező sémáját alakítja át a Laravel validator által értelmezhető szabályokká.
+     *
      * @param  array<string, mixed>  $config
      * @param  array<string, mixed>  $context
      * @return array<int, mixed>
@@ -70,6 +80,8 @@ final class SharedLaravelValidationRules
     }
 
     /**
+     * A context alapján feloldható `unique` szabályt építi fel, beleértve az ignore eseteket is.
+     *
      * @param  array<string, mixed>  $config
      * @param  array<string, mixed>  $context
      */

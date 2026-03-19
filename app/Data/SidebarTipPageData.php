@@ -9,6 +9,9 @@ use Illuminate\Validation\Rule;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 
+/**
+ * Az oldalszintű sidebar tipp konfiguráció adatátviteli objektuma.
+ */
 class SidebarTipPageData extends Data
 {
     /**
@@ -93,6 +96,9 @@ class SidebarTipPageData extends Data
         ];
     }
 
+    /**
+     * @return array{page_component:string,is_visible:bool,rotation_interval_seconds:int}
+     */
     public function toRepositoryAttributes(): array
     {
         return [
@@ -102,6 +108,9 @@ class SidebarTipPageData extends Data
         ];
     }
 
+    /**
+     * @return array<int, array{id:int|null,content:string,sort_order:int,is_active:bool}>
+     */
     public function tipAttributes(): array
     {
         return array_map(fn (array $tip) => [

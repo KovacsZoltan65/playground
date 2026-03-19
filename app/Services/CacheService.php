@@ -82,12 +82,12 @@ class CacheService
             return;
         }
 
-        // Fallback – a szerep/jogosultság területén legalább a Spatie cache ürüljön
+        // Tag-támogatás nélkül is ürítsük a Spatie permission cache-t a jogosultsági területen.
         if (\in_array($tag, ['roles', 'permissions', \App\Models\Role::getTag()], true)) {
             app(SpatiePermissionRegistrar::class)->forgetCachedPermissions();
         }
 
-        // Csak debug módban írjunk logot, és csak egyszer a kérés élettartama alatt
+        // Debug módban egyszer jelezzük, hogy az aktuális cache store nem támogatja a tageket.
         if (config('app.debug')) {
             static $warned = false;
             if (! $warned) {
@@ -158,7 +158,7 @@ class CacheService
         $keys = $this->trackedKeysWithExpiry($tag);
         $keys[$key] = $this->resolveExpiryTimestamp($ttl);
 
-        // The index itself is permanent; each tracked key carries its own expiry.
+        // Maga az index maradandó, a lejáratot az egyes tárolt kulcsokhoz rendeljük.
         Cache::forever("{$tag}_keys", $keys);
     }
 

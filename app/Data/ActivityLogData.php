@@ -6,8 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\LaravelData\Data;
 
+/**
+ * Az activity log rekordok frontend felé továbbított adatátviteli objektuma.
+ */
 class ActivityLogData extends Data
 {
+    /**
+     * @param  array<string, mixed>  $properties
+     */
     public function __construct(
         public int $id,
         public string $log_name,

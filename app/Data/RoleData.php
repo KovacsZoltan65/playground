@@ -10,6 +10,9 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 use Spatie\Permission\Models\Role;
 
+/**
+ * A szerepkörök szerkesztéséhez és listázásához használt DTO.
+ */
 class RoleData extends Data
 {
     /**
@@ -59,6 +62,9 @@ class RoleData extends Data
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     public static function validateBulkDeleteIds(Request $request): array
     {
         return Validator::make($request->all(), [
@@ -83,6 +89,9 @@ class RoleData extends Data
         );
     }
 
+    /**
+     * @return array{name:string,guard_name:string}
+     */
     public function toRepositoryAttributes(): array
     {
         return [
@@ -91,6 +100,9 @@ class RoleData extends Data
         ];
     }
 
+    /**
+     * @return array<int, int>
+     */
     public function permissionIds(): array
     {
         return $this->permission_ids;

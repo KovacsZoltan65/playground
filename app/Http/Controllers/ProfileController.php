@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * A saját profil adatainak megjelenítését, frissítését és törlését kezeli.
+ */
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Megjeleníti a saját profil szerkesztőoldalát.
      */
     public function edit(Request $request): Response
     {
@@ -25,7 +28,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Frissíti a profil adatait, és e-mail módosításnál visszaállítja a verifikáció állapotát.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
@@ -41,7 +44,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Delete the user's account.
+     * Jelszó-megerősítés után törli a saját felhasználói fiókot.
      */
     public function destroy(Request $request): RedirectResponse
     {

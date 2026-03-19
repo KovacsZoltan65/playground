@@ -9,6 +9,12 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
 
+/**
+ * A cégekhez tartozó összetettebb adat-hozzáférési logikát összefogó repository.
+ *
+ * A repository rétegben kezeli a listaoldali lekérdezést, a cache kulcsok felépítését
+ * és a select opciók előállítását.
+ */
 class CompanyRepository implements CompanyRepositoryInterface
 {
     public function __construct(
@@ -16,6 +22,12 @@ class CompanyRepository implements CompanyRepositoryInterface
     ) {
     }
     
+    /**
+     * A céglista szerveroldali szűrését, rendezését és opcionális cache-elését kezeli.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, Company>
+     */
     public function paginateForIndex(array $filters = [], int $perPage = 10, ?bool $needCache = null): LengthAwarePaginator
     {
         $needCache ??= (bool) config('cache.enable_companies', false);
@@ -108,6 +120,9 @@ class CompanyRepository implements CompanyRepositoryInterface
         return $deletedCount;
     }
 
+    /**
+     * @return list<array{value:int,label:string}>
+     */
     public function optionsForSelect(): array
     {
         return Company::query()
@@ -121,6 +136,10 @@ class CompanyRepository implements CompanyRepositoryInterface
             ->all();
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Company>
+     */
     private function buildIndexQuery(array $filters = []): Builder
     {
         $search = $filters['global'] ?? null;
@@ -147,6 +166,10 @@ class CompanyRepository implements CompanyRepositoryInterface
             });
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, scalar|null>
+     */
     private function buildAppendQuery(array $filters, int $perPage, int $page): array
     {
         return array_filter([
@@ -198,6 +221,11 @@ class CompanyRepository implements CompanyRepositoryInterface
         return Company::getTag();
     }
 
+    /**
+     * Csak a whitelistelt mezőkön enged rendezést, hogy a listaoldal kérésparaméterei biztonságosak maradjanak.
+     *
+     * @param  Builder<Company>  $query
+     */
     private function applySorting(Builder $query, string $sortField, string $sortDirection): void
     {
         $direction = strtolower($sortDirection) === 'desc' ? 'desc' : 'asc';

@@ -14,10 +14,13 @@ use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * A nyilvános regisztrációs felületet és a felhasználó létrehozását kezeli.
+ */
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Megjeleníti a regisztrációs oldalt.
      */
     public function create(): Response
     {
@@ -25,7 +28,7 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Elvégzi a regisztrációs kérés validálását, létrehozza a felhasználót és belépteti.
      *
      * @throws ValidationException
      */

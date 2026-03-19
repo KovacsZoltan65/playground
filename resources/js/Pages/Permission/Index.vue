@@ -420,14 +420,12 @@ onBeforeUnmount(() => {
         <div class="space-y-6">
             <ConfirmDialog />
 
-            <!-- Create Modal -->
             <CreateModal
                 v-model="createOpen"
                 :guard-options="guardOptions"
                 @saved="handleSaved"
             />
 
-            <!-- Edit Modal -->
             <EditModal
                 v-model="editOpen"
                 :permission="editPermission"
@@ -485,7 +483,6 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div class="flex flex-wrap gap-3">
-                            <!-- Refresh -->
                             <Button
                                 :label="$t('Refresh')"
                                 icon="pi pi-refresh"
@@ -494,7 +491,6 @@ onBeforeUnmount(() => {
                                 @click="refreshPermissions"
                             />
 
-                            <!-- Create -->
                             <Button
                                 :label="$t('Create permission')"
                                 icon="pi pi-plus"
@@ -507,7 +503,6 @@ onBeforeUnmount(() => {
                         class="mb-5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between"
                     >
                         <div class="flex flex-wrap gap-3">
-                            <!-- Delete Selected -->
                             <Button
                                 :label="$t('Delete selected')"
                                 icon="pi pi-trash"
@@ -518,7 +513,6 @@ onBeforeUnmount(() => {
                             />
                         </div>
 
-                        <!-- View Columns -->
                         <MultiSelect
                             v-model="visibleColumnKeys"
                             :options="availableColumns"
@@ -632,7 +626,6 @@ onBeforeUnmount(() => {
 
                         <Column selection-mode="multiple" header-style="width: 3rem" />
 
-                        <!-- Name -->
                         <Column
                             field="name"
                             :header="$t('Permission name')"
@@ -683,7 +676,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Guard Name -->
                         <Column
                             field="guard_name"
                             :header="$t('Guard')"
@@ -719,7 +711,6 @@ onBeforeUnmount(() => {
                             </template>
                         </Column>
 
-                        <!-- Updated At -->
                         <Column
                             field="updated_at"
                             :header="$t('Last updated')"

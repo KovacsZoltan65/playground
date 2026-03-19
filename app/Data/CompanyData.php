@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Validator;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 
+/**
+ * A cégkezelő oldalak és service-ek közötti adattranszferért felelős DTO.
+ */
 class CompanyData extends Data
 {
     public function __construct(
@@ -51,6 +54,9 @@ class CompanyData extends Data
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     public static function validateBulkDeleteIds(Request $request): array
     {
         return Validator::make($request->all(), [
@@ -69,6 +75,9 @@ class CompanyData extends Data
         ]);
     }
 
+    /**
+     * @return array{name:string,email:?string,phone:?string,address:?string,is_active:bool}
+     */
     public function toRepositoryAttributes(): array
     {
         return [

@@ -6,6 +6,12 @@ use App\Data\CompanyData;
 use App\Models\Company;
 use App\Repositories\Contracts\CompanyRepositoryInterface;
 
+/**
+ * A cégkezelés alkalmazásszintű use case-eit kiszolgáló service.
+ *
+ * A controller és a repository közé ékelődve DTO-kra alakítja a modelleket,
+ * és egységes válaszszerkezetet biztosít a listaoldalak számára.
+ */
 class CompanyService
 {
     public function __construct(
@@ -13,6 +19,13 @@ class CompanyService
     ) {
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array{
+     *     data:list<CompanyData>,
+     *     meta:array{current_page:int,last_page:int,per_page:int,total:int}
+     * }
+     */
     public function listForIndex(array $filters = [], int $perPage = 10): array
     {
         $paginator = $this->companies->paginateForIndex($filters, $perPage);
@@ -62,11 +75,17 @@ class CompanyService
         return $this->companies->delete($company);
     }
 
+    /**
+     * @param  array<int, int>  $ids
+     */
     public function bulkDelete(array $ids): int
     {
         return $this->companies->bulkDeleteByIds($ids);
     }
 
+    /**
+     * @return list<array{value:int,label:string}>
+     */
     public function optionsForSelect(): array
     {
         return $this->companies->optionsForSelect();

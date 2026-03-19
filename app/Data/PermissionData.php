@@ -10,6 +10,9 @@ use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 use Spatie\Permission\Models\Permission;
 
+/**
+ * A jogosultságkezeléshez használt permission DTO.
+ */
 class PermissionData extends Data
 {
     public function __construct(
@@ -43,6 +46,9 @@ class PermissionData extends Data
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     public static function validateBulkDeleteIds(Request $request): array
     {
         return Validator::make($request->all(), [
@@ -62,6 +68,9 @@ class PermissionData extends Data
         ]);
     }
 
+    /**
+     * @return array{name:string,guard_name:string}
+     */
     public function toRepositoryAttributes(): array
     {
         return [

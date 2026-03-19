@@ -8,10 +8,13 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
+/**
+ * Az e-mail megerősítésre váró felhasználókat a megfelelő felületre irányítja.
+ */
 class EmailVerificationPromptController extends Controller
 {
     /**
-     * Display the email verification prompt.
+     * A hitelesített, de még nem megerősített felhasználónak megjeleníti a verify oldalt.
      */
     public function __invoke(Request $request): RedirectResponse|Response
     {

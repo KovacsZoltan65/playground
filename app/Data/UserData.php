@@ -10,6 +10,9 @@ use Illuminate\Validation\Rules\Password;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 
+/**
+ * A felhasználókezelő folyamatok központi DTO-ja.
+ */
 class UserData extends Data
 {
     /**
@@ -70,6 +73,9 @@ class UserData extends Data
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     public static function validateBulkDeleteIds(Request $request): array
     {
         return Validator::make($request->all(), [
@@ -101,6 +107,9 @@ class UserData extends Data
         return $rules;
     }
 
+    /**
+     * @return array{name:string,email:string,password?:string}
+     */
     public function toRepositoryAttributes(): array
     {
         $attributes = [
@@ -115,6 +124,9 @@ class UserData extends Data
         return $attributes;
     }
 
+    /**
+     * @return array<int, int>
+     */
     public function roleIds(): array
     {
         return $this->role_ids;

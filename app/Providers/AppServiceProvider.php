@@ -33,6 +33,7 @@ use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Contracts\UserTemporaryPermissionRepositoryInterface;
 use App\Services\SidebarTipPageService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Grammars\PostgresGrammar;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;

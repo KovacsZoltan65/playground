@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Validator;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Support\Validation\ValidationContext;
 
+/**
+ * Az alkalmazotti űrlapok és listaoldalak számára egységes employee DTO.
+ */
 class EmployeeData extends Data
 {
     public function __construct(
@@ -52,6 +55,9 @@ class EmployeeData extends Data
         ]);
     }
 
+    /**
+     * @return array<int, int>
+     */
     public static function validateBulkDeleteIds(Request $request): array
     {
         return Validator::make($request->all(), [
@@ -65,6 +71,9 @@ class EmployeeData extends Data
         return SharedLaravelValidationRules::for('employee');
     }
 
+    /**
+     * @return array{company_id:int,name:string,email:string,active:bool}
+     */
     public function toRepositoryAttributes(): array
     {
         return [

@@ -5,12 +5,20 @@ namespace App\Support\Validation;
 use InvalidArgumentException;
 use JsonException;
 
+/**
+ * A frontend és backend között megosztott validációs sémák betöltéséért felel.
+ *
+ * A support rétegben helyezkedik el, és a JSON alapú sémákat egyszer olvassa be,
+ * majd kérésen belül memóriában cache-eli a további felhasználásokhoz.
+ */
 final class SharedValidationSchema
 {
     /** @var array<string, array<string, mixed>> */
     private static array $cache = [];
 
     /**
+     * Betölti és cache-eli a megadott séma teljes definícióját.
+     *
      * @return array<string, mixed>
      */
     public static function load(string $schema): array

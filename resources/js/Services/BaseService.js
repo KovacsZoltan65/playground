@@ -1,6 +1,12 @@
 import { apiClient } from "@/Services/HttpClient.js";
 import ErrorService from "@/Services/ErrorService.js";
 
+/**
+ * Közös API service alaposztály.
+ *
+ * Egységesen kezeli a response interceptor telepítését, a validációs hibák
+ * normalizálását és a kliensoldali API hibák naplózását.
+ */
 class BaseService {
     static _interceptorInstalled = false;
 
@@ -11,16 +17,14 @@ class BaseService {
             this.apiClient.interceptors.response.use(
                 (response) => response,
                 (error) => {
-                    // Enrich error, de NE változtasd az alakját
                     const status = error?.response?.status;
                     const data = error?.response?.data;
 
                     if (data?.errors && status === 422) {
-                        // adjunk “normalizedErrors”-t, hogy a komponens egyszerűen olvassa
+                        // A komponensek egységesen ezen a mezőn keresztül olvassák a backend validációs hibákat.
                         error.normalizedErrors = data.errors;
                     }
 
-                    // Kliens oldali log
                     if (error.response) {
                         ErrorService.logClientError(error, {
                             category: "api_error",
@@ -34,7 +38,7 @@ class BaseService {
                         });
                     }
 
-                    return Promise.reject(error); // <- mindig az eredeti error megy tovább
+                    return Promise.reject(error);
                 },
             );
             BaseService._interceptorInstalled = true;
