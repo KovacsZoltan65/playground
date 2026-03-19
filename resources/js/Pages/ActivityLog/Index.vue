@@ -17,7 +17,13 @@ import InputIcon from "primevue/inputicon";
 import InputText from "primevue/inputtext";
 import MultiSelect from "primevue/multiselect";
 import Select from "primevue/select";
+import Tab from "primevue/tab";
+import TabList from "primevue/tablist";
+import TabPanel from "primevue/tabpanel";
+import TabPanels from "primevue/tabpanels";
+import Tabs from "primevue/tabs";
 import Tag from "primevue/tag";
+import Timeline from "primevue/timeline";
 import { useToast } from "primevue/usetoast";
 
 const props = defineProps({
@@ -39,6 +45,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 const activities = ref([]);
 const loading = ref(false);
+const activeView = ref("table");
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const selectedActivity = ref(null);
 const detailsVisible = ref(false);
@@ -620,69 +627,103 @@ onBeforeUnmount(() => {
 
             <Card class="app-card border-0">
                 <template #content>
-                    <DataTable
-                        v-model:filters="tableFilters"
-                        :value="activities"
-                        :loading="loading"
-                        lazy
-                        paginator
-                        removableSort
-                        filter-display="menu"
-                        data-key="id"
-                        :sort-field="tableState.sortField"
-                        :sort-order="tableState.sortOrder"
-                        :rows="meta.per_page"
-                        :first="(meta.current_page - 1) * meta.per_page"
-                        :total-records="meta.total"
-                        :global-filter-fields="[
-                            'description',
-                            'log_name',
-                            'event',
-                            'causer_label',
-                            'subject_label',
-                        ]"
-                        paginator-template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
-                        :rows-per-page-options="[10, 25, 50]"
-                        table-style="min-width: 72rem"
-                        @page="onPage"
-                        @filter="onFilter"
-                        @sort="onSort"
-                    >
-                        <template #header>
-                            <div
-                                class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"
-                            >
+                    <div class="flex flex-col gap-5">
+                        <div
+                            class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                        >
+                            <div class="space-y-2">
                                 <div class="text-sm text-slate-500">
                                     {{
-                                        $t(
-                                            "Read-only monitoring table backed by the activity_log repository layer."
-                                        )
+                                        activeView === "table"
+                                            ? $t(
+                                                  "Read-only monitoring table backed by the activity_log repository layer."
+                                              )
+                                            : $t(
+                                                  "Review the same filtered activity feed in a chronological timeline."
+                                              )
                                     }}
                                 </div>
-                                <div
-                                    class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row"
+                                <Tabs
+                                    v-model:value="activeView"
+                                    data-test-id="activity-view-tabs"
                                 >
-                                    <Button
-                                        type="button"
-                                        icon="pi pi-filter-slash"
-                                        severity="secondary"
-                                        outlined
-                                        :label="$t('Clear')"
-                                        @click="clearFilters"
-                                    />
-                                    <IconField>
-                                        <InputIcon>
-                                            <i class="pi pi-search" />
-                                        </InputIcon>
-                                        <InputText
-                                            v-model="searchInput"
-                                            class="w-full xl:w-80"
-                                            :placeholder="$t('Keyword Search')"
-                                        />
-                                    </IconField>
-                                </div>
+                                    <TabList>
+                                        <Tab
+                                            value="table"
+                                            data-test-id="activity-view-tab-table"
+                                        >
+                                            {{ $t("Table") }}
+                                        </Tab>
+                                        <Tab
+                                            value="timeline"
+                                            data-test-id="activity-view-tab-timeline"
+                                        >
+                                            {{ $t("Timeline") }}
+                                        </Tab>
+                                    </TabList>
+                                    <TabPanels class="hidden">
+                                        <TabPanel value="table" />
+                                        <TabPanel value="timeline" />
+                                    </TabPanels>
+                                </Tabs>
                             </div>
-                        </template>
+
+                            <div
+                                class="flex w-full flex-col gap-3 xl:w-auto xl:flex-row"
+                            >
+                                <Button
+                                    type="button"
+                                    icon="pi pi-filter-slash"
+                                    severity="secondary"
+                                    outlined
+                                    :label="$t('Clear')"
+                                    @click="clearFilters"
+                                />
+                                <IconField>
+                                    <InputIcon>
+                                        <i class="pi pi-search" />
+                                    </InputIcon>
+                                    <InputText
+                                        v-model="searchInput"
+                                        class="w-full xl:w-80"
+                                        :placeholder="$t('Keyword Search')"
+                                    />
+                                </IconField>
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="activeView === 'table'"
+                            data-test-id="activity-view-panel-table"
+                        >
+                            <DataTable
+                                v-model:filters="tableFilters"
+                                :value="activities"
+                                :loading="loading"
+                                lazy
+                                paginator
+                                removableSort
+                                filter-display="menu"
+                                data-key="id"
+                                :sort-field="tableState.sortField"
+                                :sort-order="tableState.sortOrder"
+                                :rows="meta.per_page"
+                                :first="(meta.current_page - 1) * meta.per_page"
+                                :total-records="meta.total"
+                                :global-filter-fields="[
+                                    'description',
+                                    'log_name',
+                                    'event',
+                                    'causer_label',
+                                    'subject_label',
+                                ]"
+                                paginator-template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
+                                :rows-per-page-options="[10, 25, 50]"
+                                table-style="min-width: 72rem"
+                                @page="onPage"
+                                @filter="onFilter"
+                                @sort="onSort"
+                            >
 
                         <template #paginatorstart>
                             <span class="text-sm text-slate-500">
@@ -866,7 +907,150 @@ onBeforeUnmount(() => {
                                 <RowActionMenu :items="buildRowActions(data)" />
                             </template>
                         </Column>
-                    </DataTable>
+                            </DataTable>
+                        </div>
+
+                        <div
+                            v-else
+                            data-test-id="activity-view-panel-timeline"
+                        >
+                            <div
+                                v-if="loading"
+                                class="py-10 text-center text-slate-500"
+                            >
+                                {{ $t("Loading activity logs...") }}
+                            </div>
+
+                            <div
+                                v-else-if="activities.length === 0"
+                                class="py-10 text-center"
+                            >
+                                <div class="text-lg font-medium text-slate-700">
+                                    {{
+                                        $t(
+                                            "No activity log entries found for the current filters."
+                                        )
+                                    }}
+                                </div>
+                                <div class="mt-2 text-sm text-slate-500">
+                                    {{
+                                        $t(
+                                            "Try clearing filters or broadening your search."
+                                        )
+                                    }}
+                                </div>
+                            </div>
+
+                            <Timeline
+                                v-else
+                                :value="activities"
+                                align="alternate"
+                                class="activity-log-timeline"
+                            >
+                                <template #opposite="{ item }">
+                                    <div class="text-sm text-slate-500">
+                                        {{
+                                            formatDateTime(item.created_at, {
+                                                pattern: "yyyy-mm-dd HH:MM",
+                                            })
+                                        }}
+                                    </div>
+                                </template>
+
+                                <template #marker="{ item }">
+                                    <span
+                                        class="flex h-3.5 w-3.5 rounded-full border-2 border-white shadow-sm"
+                                        :class="{
+                                            'bg-emerald-500': eventSeverity(item.event) === 'success',
+                                            'bg-sky-500': eventSeverity(item.event) === 'info',
+                                            'bg-amber-500': eventSeverity(item.event) === 'warn',
+                                            'bg-rose-500': eventSeverity(item.event) === 'danger',
+                                            'bg-slate-400': eventSeverity(item.event) === 'secondary',
+                                        }"
+                                    />
+                                </template>
+
+                                <template #content="{ item, index }">
+                                    <article
+                                        class="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm"
+                                        :data-test-id="`timeline-item-${index}`"
+                                    >
+                                        <div
+                                            class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
+                                        >
+                                            <div class="space-y-3">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <Tag severity="secondary" :value="item.log_name" />
+                                                    <Tag
+                                                        :severity="eventSeverity(item.event)"
+                                                        :value="item.event || $t('N/A')"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <h3 class="text-base font-semibold text-slate-950">
+                                                        {{ item.description }}
+                                                    </h3>
+                                                    <p class="mt-1 text-sm text-slate-500">
+                                                        {{
+                                                            item.batch_uuid
+                                                                ? `${$t('Batch')}: ${item.batch_uuid}`
+                                                                : $t("No batch")
+                                                        }}
+                                                    </p>
+                                                </div>
+
+                                                <dl
+                                                    class="grid gap-3 text-sm text-slate-600 sm:grid-cols-2"
+                                                >
+                                                    <div>
+                                                        <dt
+                                                            class="text-xs uppercase tracking-[0.2em] text-slate-400"
+                                                        >
+                                                            {{ $t("Actor") }}
+                                                        </dt>
+                                                        <dd class="mt-1 font-medium text-slate-900">
+                                                            {{ item.causer_label || $t("System") }}
+                                                        </dd>
+                                                        <dd class="mt-1 text-slate-500">
+                                                            {{ formatModelType(item.causer_type) }}
+                                                        </dd>
+                                                    </div>
+
+                                                    <div>
+                                                        <dt
+                                                            class="text-xs uppercase tracking-[0.2em] text-slate-400"
+                                                        >
+                                                            {{ $t("Subject") }}
+                                                        </dt>
+                                                        <dd class="mt-1 font-medium text-slate-900">
+                                                            {{ item.subject_label || $t("N/A") }}
+                                                        </dd>
+                                                        <dd class="mt-1 text-slate-500">
+                                                            {{ formatModelType(item.subject_type) }}
+                                                        </dd>
+                                                    </div>
+                                                </dl>
+                                            </div>
+
+                                            <div class="flex shrink-0 items-start">
+                                                <Button
+                                                    type="button"
+                                                    size="small"
+                                                    icon="pi pi-eye"
+                                                    severity="secondary"
+                                                    outlined
+                                                    :label="$t('Details')"
+                                                    :data-test-id="`timeline-details-${index}`"
+                                                    @click="openDetails(item)"
+                                                />
+                                            </div>
+                                        </div>
+                                    </article>
+                                </template>
+                            </Timeline>
+                        </div>
+                    </div>
 
                     <div
                         v-if="activeFilters.length > 0"

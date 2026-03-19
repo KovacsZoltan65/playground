@@ -261,5 +261,8 @@
     "Activity logs refreshed.": "Az aktivitási naplók frissültek.",
     "Details": "Részletek",
     "Activity log details": "Aktivitási napló részletei",
-    "Actions": "Műveletek"
+    "Actions": "Műveletek",
+    "Table": "Táblázat",
+    "Timeline": "Idővonal",
+    "Review the same filtered activity feed in a chronological timeline.": "Tekintsd át ugyanazt a szűrt aktivitási adatfolyamot időrendi idővonal nézetben."
 }
