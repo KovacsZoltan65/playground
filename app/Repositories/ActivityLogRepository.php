@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Repositories\Contracts\ActivityLogRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\Paginator;
@@ -25,6 +26,25 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
         $paginator->appends($appendQuery);
 
         return $paginator;
+    }
+
+    public function summarizeForAnalysis(array $filters = []): array
+    {
+        $query = $this->buildIndexQuery($filters);
+
+        return [
+            'totals' => [
+                'entries' => (clone $query)->count(),
+                'exceptions' => (clone $query)->where('event', 'exception')->count(),
+                'frontend_errors' => (clone $query)->where('event', 'frontend-error')->count(),
+                'system_entries' => (clone $query)->whereNull('causer_id')->count(),
+                'distinct_log_names' => (clone $query)->whereNotNull('log_name')->distinct()->count('log_name'),
+                'distinct_events' => (clone $query)->whereNotNull('event')->distinct()->count('event'),
+            ],
+            'event_breakdown' => $this->eventBreakdown($query),
+            'log_name_breakdown' => $this->logNameBreakdown($query),
+            'daily_activity' => $this->dailyActivity($query),
+        ];
     }
 
     public function logNameOptions(): array
@@ -72,6 +92,64 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             ->when($search, fn (Builder $query, $value) => $this->applyGlobalSearch($query, (string) $value))
             ->when($logName, fn (Builder $query, $value) => $query->where('log_name', (string) $value))
             ->when($event, fn (Builder $query, $value) => $query->where('event', (string) $value));
+    }
+
+    private function eventBreakdown(Builder $query): array
+    {
+        return (clone $query)
+            ->selectRaw('event, COUNT(*) as aggregate')
+            ->groupBy('event')
+            ->orderByDesc('aggregate')
+            ->orderBy('event')
+            ->limit(6)
+            ->get()
+            ->map(fn (Activity $activity) => [
+                'event' => $activity->event,
+                'count' => (int) $activity->aggregate,
+            ])
+            ->all();
+    }
+
+    private function logNameBreakdown(Builder $query): array
+    {
+        return (clone $query)
+            ->selectRaw('log_name, COUNT(*) as aggregate')
+            ->groupBy('log_name')
+            ->orderByDesc('aggregate')
+            ->orderBy('log_name')
+            ->limit(6)
+            ->get()
+            ->map(fn (Activity $activity) => [
+                'log_name' => $activity->log_name,
+                'count' => (int) $activity->aggregate,
+            ])
+            ->all();
+    }
+
+    private function dailyActivity(Builder $query): array
+    {
+        $startDate = now()->subDays(6)->startOfDay();
+
+        $countsByDate = (clone $query)
+            ->where('created_at', '>=', $startDate)
+            ->selectRaw('DATE(created_at) as activity_date, COUNT(*) as aggregate')
+            ->groupBy('activity_date')
+            ->orderBy('activity_date')
+            ->get()
+            ->mapWithKeys(fn (Activity $activity) => [
+                $activity->activity_date => (int) $activity->aggregate,
+            ]);
+
+        return collect(range(0, 6))
+            ->map(function (int $offset) use ($countsByDate, $startDate): array {
+                $date = Carbon::parse($startDate)->addDays($offset)->toDateString();
+
+                return [
+                    'date' => $date,
+                    'count' => $countsByDate[$date] ?? 0,
+                ];
+            })
+            ->all();
     }
 
     private function applyGlobalSearch(Builder $query, string $search): Builder

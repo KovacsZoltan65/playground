@@ -37,8 +37,8 @@ class CompanyData extends Data
             address: $company->address,
             is_active: $company->is_active,
             employees_count: (int) ($company->employees_count ?? 0),
-            created_at: $company->created_at?->toDateTimeString(),
-            updated_at: $company->updated_at?->toDateTimeString(),
+            created_at: $company->created_at->toDateTimeString(),
+            updated_at: $company->updated_at->toDateTimeString(),
         );
     }
 

@@ -13,11 +13,25 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 /**
  * A rendszerben kezelt cégeket reprezentáló Eloquent modell.
+ * 
+ * @property int|string $id Cég azonosító
+ * @property string $name Cég neve
+ * @property string $name_lc Cég neve kisbetűvel (kereséshez)
+ * @property string $email Email cím
+ * @property string $address Cím
+ * @property string $phone Telefonszám
+ * @property boolean $is_active Aktív státusz
+ * @property-read int|null $employees_count Betöltött employees reláció darabszáma `withCount()` esetén
+ * @property \Illuminate\Support\Carbon|null $deleted_at Törlés időpontja (soft delete)
+ * @property \Illuminate\Support\Carbon $created_at Létrehozás időpontja
+ * @property \Illuminate\Support\Carbon $updated_at Módosítás időpontja
  */
 class Company extends Model
 {
     /** @use HasFactory<CompanyFactory> */
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory;
+    use SoftDeletes;
+    use LogsActivity;
 
     /** @var list<string> */
     protected $fillable = [

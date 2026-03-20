@@ -32,15 +32,36 @@ class ActivityLogController extends Controller
 
         return response()->json(
             $this->activityLogViewerService->listForIndex(
-                filters: [
-                    'global' => $request->string('search')->toString() ?: null,
-                    'log_name' => $request->string('log_name')->toString() ?: null,
-                    'event' => $request->string('event')->toString() ?: null,
-                    'sort_field' => $request->string('sort_field')->toString() ?: 'created_at',
-                    'sort_direction' => $request->string('sort_direction')->toString() ?: 'desc',
-                ],
+                filters: $this->filtersFromRequest($request, includeSorting: true),
                 perPage: (int) $request->integer('per_page', 10),
             ),
         );
+    }
+
+    public function analysis(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Activity::class);
+
+        return response()->json(
+            $this->activityLogViewerService->analysis(
+                filters: $this->filtersFromRequest($request),
+            ),
+        );
+    }
+
+    private function filtersFromRequest(Request $request, bool $includeSorting = false): array
+    {
+        $filters = [
+            'global' => $request->string('search')->toString() ?: null,
+            'log_name' => $request->string('log_name')->toString() ?: null,
+            'event' => $request->string('event')->toString() ?: null,
+        ];
+
+        if ($includeSorting) {
+            $filters['sort_field'] = $request->string('sort_field')->toString() ?: 'created_at';
+            $filters['sort_direction'] = $request->string('sort_direction')->toString() ?: 'desc';
+        }
+
+        return $filters;
     }
 }

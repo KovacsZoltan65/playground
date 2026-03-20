@@ -14,6 +14,14 @@ class ActivityLogService extends BaseService {
 
         return response.data;
     }
+
+    async analysis(params = {}) {
+        const response = await this.get(route(`${this.url}.analysis`), {
+            params,
+        });
+
+        return response.data;
+    }
 }
 
 export default new ActivityLogService();

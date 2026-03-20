@@ -53,9 +53,58 @@ it('allows authorized users to list activity logs through the json endpoint', fu
         ->assertJsonPath('data.0.subject_label', 'Acme Audit');
 });
 
+it('returns aggregate analysis for the current activity log filters', function () {
+    $actor = activityLogViewerUser(Roles::ADMIN);
+    Activity::query()->delete();
+
+    Activity::query()->create([
+        'log_name' => 'errors',
+        'description' => 'Unhandled exception',
+        'subject_type' => null,
+        'subject_id' => null,
+        'causer_type' => User::class,
+        'causer_id' => $actor->id,
+        'event' => 'exception',
+        'properties' => [],
+        'created_at' => now()->subDay(),
+        'updated_at' => now()->subDay(),
+    ]);
+
+    Activity::query()->create([
+        'log_name' => 'frontend',
+        'description' => 'Browser error',
+        'subject_type' => null,
+        'subject_id' => null,
+        'causer_type' => null,
+        'causer_id' => null,
+        'event' => 'frontend-error',
+        'properties' => [],
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($actor)
+        ->getJson(route('activity-logs.analysis'))
+        ->assertOk()
+        ->assertJsonPath('totals.entries', 2)
+        ->assertJsonPath('totals.exceptions', 1)
+        ->assertJsonPath('totals.frontend_errors', 1)
+        ->assertJsonPath('totals.system_entries', 1)
+        ->assertJsonPath('totals.distinct_log_names', 2)
+        ->assertJsonPath('event_breakdown.0.count', 1)
+        ->assertJsonPath('log_name_breakdown.0.count', 1)
+        ->assertJsonCount(7, 'daily_activity');
+});
+
 it('forbids listing activity logs without permission', function () {
     $this->actingAs(activityLogViewerUser(Roles::USER))
         ->getJson(route('activity-logs.list'))
+        ->assertForbidden();
+});
+
+it('forbids viewing activity log analysis without permission', function () {
+    $this->actingAs(activityLogViewerUser(Roles::USER))
+        ->getJson(route('activity-logs.analysis'))
         ->assertForbidden();
 });
 

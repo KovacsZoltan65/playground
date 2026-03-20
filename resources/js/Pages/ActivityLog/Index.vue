@@ -45,6 +45,7 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 const activities = ref([]);
 const loading = ref(false);
+const analysisLoading = ref(false);
 const activeView = ref("table");
 const visibleColumnKeys = ref([...DEFAULT_VISIBLE_COLUMN_KEYS]);
 const selectedActivity = ref(null);
@@ -72,6 +73,19 @@ const meta = reactive({
     last_page: 1,
     per_page: 10,
     total: 0,
+});
+const analysis = ref({
+    totals: {
+        entries: 0,
+        exceptions: 0,
+        frontend_errors: 0,
+        system_entries: 0,
+        distinct_log_names: 0,
+        distinct_events: 0,
+    },
+    event_breakdown: [],
+    log_name_breakdown: [],
+    daily_activity: [],
 });
 
 const availableColumns = computed(() => {
@@ -143,6 +157,33 @@ const quickStats = computed(() => {
     ];
 });
 
+const analysisCards = computed(() => {
+    currentLocale.value;
+
+    return [
+        {
+            label: trans("Filtered entries"),
+            value: analysis.value.totals.entries,
+            caption: trans("Entries matching the current filters across the full dataset"),
+        },
+        {
+            label: trans("Exceptions in scope"),
+            value: analysis.value.totals.exceptions,
+            caption: trans("Backend exception records within the current filters"),
+        },
+        {
+            label: trans("Frontend errors in scope"),
+            value: analysis.value.totals.frontend_errors,
+            caption: trans("Client-side error records within the current filters"),
+        },
+        {
+            label: trans("System-generated entries"),
+            value: analysis.value.totals.system_entries,
+            caption: trans("Entries without an explicit user actor"),
+        },
+    ];
+});
+
 const activeFilters = computed(() => {
     currentLocale.value;
 
@@ -172,14 +213,21 @@ const activeFilters = computed(() => {
     return filters;
 });
 
+const currentFilterParams = () =>
+    Object.fromEntries(
+        Object.entries({
+            search: tableFilters.value.global.value || undefined,
+            log_name: tableFilters.value.log_name.value || undefined,
+            event: tableFilters.value.event.value || undefined,
+        }).filter(([, value]) => value !== undefined)
+    );
+
 const fetchActivities = async () => {
     loading.value = true;
 
     try {
         const response = await activityLogService.list({
-            search: tableFilters.value.global.value || undefined,
-            log_name: tableFilters.value.log_name.value || undefined,
-            event: tableFilters.value.event.value || undefined,
+            ...currentFilterParams(),
             sort_field: tableState.sortField,
             sort_direction: tableState.sortOrder === 1 ? "asc" : "desc",
             page: tableState.page,
@@ -191,6 +239,35 @@ const fetchActivities = async () => {
     } finally {
         loading.value = false;
     }
+};
+
+const fetchAnalysis = async () => {
+    analysisLoading.value = true;
+
+    try {
+        const response = await activityLogService.analysis(currentFilterParams());
+
+        analysis.value = {
+            totals: {
+                entries: 0,
+                exceptions: 0,
+                frontend_errors: 0,
+                system_entries: 0,
+                distinct_log_names: 0,
+                distinct_events: 0,
+                ...(response?.totals ?? {}),
+            },
+            event_breakdown: response?.event_breakdown ?? [],
+            log_name_breakdown: response?.log_name_breakdown ?? [],
+            daily_activity: response?.daily_activity ?? [],
+        };
+    } finally {
+        analysisLoading.value = false;
+    }
+};
+
+const fetchFilteredDataset = async () => {
+    await Promise.all([fetchActivities(), fetchAnalysis()]);
 };
 
 const showSuccessToast = (detail) => {
@@ -220,7 +297,7 @@ const onPage = async (event) => {
 const onFilter = async (event) => {
     tableFilters.value = event.filters;
     tableState.page = 1;
-    await fetchActivities();
+    await fetchFilteredDataset();
 };
 
 const onSort = async (event) => {
@@ -239,12 +316,12 @@ const clearFilters = async () => {
         event: { value: null, matchMode: "equals" },
     };
     tableState.page = 1;
-    await fetchActivities();
+    await fetchFilteredDataset();
 };
 
 const refreshActivities = async () => {
     try {
-        await fetchActivities();
+        await fetchFilteredDataset();
         showSuccessToast(trans("Activity logs refreshed."));
     } catch (error) {
         showErrorToast(error?.response?.data?.message);
@@ -264,7 +341,7 @@ const clearSingleFilter = async (filterKey) => {
         searchInput.value = "";
         tableFilters.value.global.value = null;
         tableState.page = 1;
-        await fetchActivities();
+        await fetchFilteredDataset();
         isProgrammaticSearchUpdate = false;
         return;
     }
@@ -274,7 +351,7 @@ const clearSingleFilter = async (filterKey) => {
     }
 
     tableState.page = 1;
-    await fetchActivities();
+    await fetchFilteredDataset();
 };
 
 const applyVisibleColumns = (keys) => {
@@ -376,14 +453,14 @@ watch(searchInput, (value) => {
     debouncedRequests.schedule("global-search", async () => {
         tableFilters.value.global.value = value || null;
         tableState.page = 1;
-        await fetchActivities();
+        await fetchFilteredDataset();
     });
 });
 
 onMounted(async () => {
     restoreVisibleColumns();
     searchInput.value = tableFilters.value.global.value ?? "";
-    await fetchActivities();
+    await fetchFilteredDataset();
 });
 
 onBeforeUnmount(() => {
@@ -615,8 +692,8 @@ onBeforeUnmount(() => {
                                     icon="pi pi-refresh"
                                     severity="secondary"
                                     size="small"
-                                    :disabled="loading"
-                                    :loading="loading"
+                                    :disabled="loading || analysisLoading"
+                                    :loading="loading || analysisLoading"
                                     @click="refreshActivities"
                                 />
                             </div>
@@ -638,6 +715,10 @@ onBeforeUnmount(() => {
                                             ? $t(
                                                   "Read-only monitoring table backed by the activity_log repository layer."
                                               )
+                                            : activeView === "analysis"
+                                              ? $t(
+                                                    "Use aggregated metrics to spot event distribution and recent activity patterns."
+                                                )
                                             : $t(
                                                   "Review the same filtered activity feed in a chronological timeline."
                                               )
@@ -660,10 +741,17 @@ onBeforeUnmount(() => {
                                         >
                                             {{ $t("Timeline") }}
                                         </Tab>
+                                        <Tab
+                                            value="analysis"
+                                            data-test-id="activity-view-tab-analysis"
+                                        >
+                                            {{ $t("Analysis") }}
+                                        </Tab>
                                     </TabList>
                                     <TabPanels class="hidden">
                                         <TabPanel value="table" />
                                         <TabPanel value="timeline" />
+                                        <TabPanel value="analysis" />
                                     </TabPanels>
                                 </Tabs>
                             </div>
@@ -911,7 +999,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div
-                            v-else
+                            v-else-if="activeView === 'timeline'"
                             data-test-id="activity-view-panel-timeline"
                         >
                             <div
@@ -1049,6 +1137,148 @@ onBeforeUnmount(() => {
                                     </article>
                                 </template>
                             </Timeline>
+                        </div>
+
+                        <div
+                            v-else
+                            data-test-id="activity-view-panel-analysis"
+                        >
+                            <div
+                                v-if="analysisLoading"
+                                class="py-10 text-center text-slate-500"
+                            >
+                                {{ $t("Loading activity log analysis...") }}
+                            </div>
+
+                            <div
+                                v-else
+                                class="space-y-6"
+                            >
+                                <section class="app-grid md:grid-cols-2 xl:grid-cols-4">
+                                    <Card
+                                        v-for="stat in analysisCards"
+                                        :key="stat.label"
+                                        class="app-card border-0"
+                                    >
+                                        <template #content>
+                                            <div class="rounded-[1.75rem] bg-slate-50 p-5">
+                                                <div class="text-sm font-medium text-slate-500">
+                                                    {{ stat.label }}
+                                                </div>
+                                                <div
+                                                    class="mt-3 text-3xl font-semibold tracking-tight text-slate-950"
+                                                >
+                                                    {{ stat.value }}
+                                                </div>
+                                                <div class="mt-2 text-sm text-slate-500">
+                                                    {{ stat.caption }}
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </Card>
+                                </section>
+
+                                <section class="app-grid lg:grid-cols-3">
+                                    <Card class="app-card border-0">
+                                        <template #content>
+                                            <div class="space-y-4 rounded-[1.75rem] bg-slate-50 p-5">
+                                                <div>
+                                                    <div class="text-sm font-semibold text-slate-950">
+                                                        {{ $t("Events by volume") }}
+                                                    </div>
+                                                    <div class="mt-1 text-sm text-slate-500">
+                                                        {{ $t("Most frequent event types within the current filters") }}
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    v-if="analysis.event_breakdown.length === 0"
+                                                    class="text-sm text-slate-500"
+                                                >
+                                                    {{ $t("No event distribution available.") }}
+                                                </div>
+
+                                                <div
+                                                    v-for="item in analysis.event_breakdown"
+                                                    :key="item.event || 'event-null'"
+                                                    class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                >
+                                                    <Tag
+                                                        :severity="eventSeverity(item.event)"
+                                                        :value="item.event || $t('N/A')"
+                                                    />
+                                                    <div class="text-sm font-semibold text-slate-900">
+                                                        {{ item.count }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </Card>
+
+                                    <Card class="app-card border-0">
+                                        <template #content>
+                                            <div class="space-y-4 rounded-[1.75rem] bg-slate-50 p-5">
+                                                <div>
+                                                    <div class="text-sm font-semibold text-slate-950">
+                                                        {{ $t("Log names by volume") }}
+                                                    </div>
+                                                    <div class="mt-1 text-sm text-slate-500">
+                                                        {{ $t("Most active activity channels within the current filters") }}
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    v-if="analysis.log_name_breakdown.length === 0"
+                                                    class="text-sm text-slate-500"
+                                                >
+                                                    {{ $t("No log-name distribution available.") }}
+                                                </div>
+
+                                                <div
+                                                    v-for="item in analysis.log_name_breakdown"
+                                                    :key="item.log_name || 'log-name-null'"
+                                                    class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                >
+                                                    <div class="text-sm font-medium text-slate-900">
+                                                        {{ item.log_name || $t("N/A") }}
+                                                    </div>
+                                                    <div class="text-sm font-semibold text-slate-900">
+                                                        {{ item.count }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </Card>
+
+                                    <Card class="app-card border-0">
+                                        <template #content>
+                                            <div class="space-y-4 rounded-[1.75rem] bg-slate-50 p-5">
+                                                <div>
+                                                    <div class="text-sm font-semibold text-slate-950">
+                                                        {{ $t("Daily activity trend") }}
+                                                    </div>
+                                                    <div class="mt-1 text-sm text-slate-500">
+                                                        {{ $t("Entry volume across the last 7 days") }}
+                                                    </div>
+                                                </div>
+
+                                                <div
+                                                    v-for="item in analysis.daily_activity"
+                                                    :key="item.date"
+                                                    class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                                                >
+                                                    <div class="text-sm font-medium text-slate-900">
+                                                        {{ item.date }}
+                                                    </div>
+                                                    <div class="text-sm font-semibold text-slate-900">
+                                                        {{ item.count }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </Card>
+                                </section>
+                            </div>
                         </div>
                     </div>
 

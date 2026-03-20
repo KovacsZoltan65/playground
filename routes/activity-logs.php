@@ -10,4 +10,5 @@ Route::middleware('auth')
     ->group(function (): void {
         Route::get('/', 'index')->name('index')->middleware('throttle:60,1');
         Route::get('/list', 'list')->name('list')->middleware('throttle:60,1');
+        Route::get('/analysis', 'analysis')->name('analysis')->middleware('throttle:60,1');
     });

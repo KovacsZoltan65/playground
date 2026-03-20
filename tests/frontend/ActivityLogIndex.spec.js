@@ -11,6 +11,7 @@ import {
 } from "./helpers/pageTestUtils";
 
 const listMock = vi.fn();
+const analysisMock = vi.fn();
 
 const TabsStub = defineComponent({
     name: "Tabs",
@@ -103,6 +104,7 @@ const TimelineStub = defineComponent({
 vi.mock("@/Services/ActivityLogService.js", () => ({
     default: {
         list: listMock,
+        analysis: analysisMock,
     },
 }));
 
@@ -171,6 +173,19 @@ describe("ActivityLog/Index", () => {
                 },
             ]),
         );
+        analysisMock.mockResolvedValue({
+            totals: {
+                entries: 1,
+                exceptions: 0,
+                frontend_errors: 0,
+                system_entries: 0,
+                distinct_log_names: 1,
+                distinct_events: 1,
+            },
+            event_breakdown: [{ event: "updated", count: 1 }],
+            log_name_breakdown: [{ log_name: "companies", count: 1 }],
+            daily_activity: [{ date: "2026-03-18", count: 1 }],
+        });
     });
 
     afterEach(() => {
@@ -200,6 +215,7 @@ describe("ActivityLog/Index", () => {
                 per_page: 10,
             }),
         );
+        expect(analysisMock).toHaveBeenCalledWith({});
 
         const dataTable = wrapper.findComponent({ name: "DataTable" });
         dataTable.vm.$emit("sort", {
@@ -277,5 +293,31 @@ describe("ActivityLog/Index", () => {
 
         expect(wrapper.get('[data-test-id="dialog"]').text()).toContain("Company updated");
         expect(wrapper.get('[data-test-id="dialog"]').text()).toContain("Alice Admin");
+    });
+
+    it("renders the analysis tab with aggregate cards and breakdowns", async () => {
+        const { default: ActivityLogIndex } = await import("@/Pages/ActivityLog/Index.vue");
+
+        const wrapper = mountPage(ActivityLogIndex, {
+            props: {
+                logNameOptions: [],
+                eventOptions: [],
+            },
+            global: {
+                stubs: pageStubs,
+            },
+        });
+
+        await flushPromises();
+
+        await wrapper.get('[data-test-id="activity-view-tab-analysis"]').trigger("click");
+        await flushPromises();
+
+        const analysisPanel = wrapper.get('[data-test-id="activity-view-panel-analysis"]');
+
+        expect(analysisPanel.text()).toContain("Filtered entries");
+        expect(analysisPanel.text()).toContain("Events by volume");
+        expect(analysisPanel.text()).toContain("companies");
+        expect(analysisPanel.text()).toContain("2026-03-18");
     });
 });

@@ -31,6 +31,11 @@ class ActivityLogViewerService
         ];
     }
 
+    public function analysis(array $filters = []): array
+    {
+        return $this->activityLogs->summarizeForAnalysis($filters);
+    }
+
     public function logNameOptions(): array
     {
         return $this->activityLogs->logNameOptions();
