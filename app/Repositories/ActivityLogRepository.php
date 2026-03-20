@@ -149,6 +149,8 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
                     'count' => $countsByDate[$date] ?? 0,
                 ];
             })
+            ->reverse()
+            ->values()
             ->all();
     }
 

@@ -56,6 +56,7 @@ it('allows authorized users to list activity logs through the json endpoint', fu
 it('returns aggregate analysis for the current activity log filters', function () {
     $actor = activityLogViewerUser(Roles::ADMIN);
     Activity::query()->delete();
+    $now = now()->startOfDay();
 
     Activity::query()->create([
         'log_name' => 'errors',
@@ -66,8 +67,8 @@ it('returns aggregate analysis for the current activity log filters', function (
         'causer_id' => $actor->id,
         'event' => 'exception',
         'properties' => [],
-        'created_at' => now()->subDay(),
-        'updated_at' => now()->subDay(),
+        'created_at' => $now->copy()->subDay(),
+        'updated_at' => $now->copy()->subDay(),
     ]);
 
     Activity::query()->create([
@@ -79,8 +80,8 @@ it('returns aggregate analysis for the current activity log filters', function (
         'causer_id' => null,
         'event' => 'frontend-error',
         'properties' => [],
-        'created_at' => now(),
-        'updated_at' => now(),
+        'created_at' => $now->copy(),
+        'updated_at' => $now->copy(),
     ]);
 
     $this->actingAs($actor)
@@ -93,6 +94,9 @@ it('returns aggregate analysis for the current activity log filters', function (
         ->assertJsonPath('totals.distinct_log_names', 2)
         ->assertJsonPath('event_breakdown.0.count', 1)
         ->assertJsonPath('log_name_breakdown.0.count', 1)
+        ->assertJsonPath('daily_activity.0.date', $now->toDateString())
+        ->assertJsonPath('daily_activity.1.date', $now->copy()->subDay()->toDateString())
+        ->assertJsonPath('daily_activity.6.date', $now->copy()->subDays(6)->toDateString())
         ->assertJsonCount(7, 'daily_activity');
 });
 
